@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payroll Run — Greenshades</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=PT+Serif:wght@700&family=Source+Sans+Pro:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #062a47;
+    font-family: 'Source Sans Pro', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #game-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    aspect-ratio: 2 / 1;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .gs-header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .gs-logo {
+    font-family: 'PT Serif', Georgia, serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #fff;
+  }
+  .gs-logo .g { color: #85c441; }
+
+  .score-display {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.65rem;
+    color: #85c441;
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  #instructions {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.45rem;
+    color: rgba(255,255,255,0.5);
+    z-index: 10;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .mobile-controls {
+    display: none;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 25%;
+    z-index: 20;
+  }
+  .mobile-btn {
+    position: absolute;
+    bottom: 10px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(133, 196, 65, 0.25);
+    border: 2px solid rgba(133, 196, 65, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.7);
+    touch-action: manipulation;
+  }
+  .mobile-btn.left { left: 15px; }
+  .mobile-btn.right { right: 15px; }
+
+  @media (pointer: coarse) {
+    .mobile-controls { display: flex; }
+    #instructions { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="game-wrapper">
+  <div class="gs-header">
+    <div class="gs-logo"><span class="g">G</span>reenshades</div>
+    <div class="score-display">
+      <div id="hud-score">$0</div>
+      <div id="hud-hi">HI $0</div>
+    </div>
+  </div>
+  <canvas id="game"></canvas>
+  <div id="instructions">SPACE / TAP to jump &nbsp;•&nbsp; DOWN to duck &nbsp;•&nbsp; Collect paychecks, dodge penalties!</div>
+  <div class="mobile-controls">
+    <div class="mobile-btn left" id="btn-duck">DUCK</div>
+    <div class="mobile-btn right" id="btn-jump">JUMP</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// PAYROLL RUN — Greenshades Conference Game
+// ═══════════════════════════════════════════════════════
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+// Pixel art scale
+const W = 800, H = 400;
+canvas.width = W;
+canvas.height = H;
+
+// Colors (Greenshades palette)
+const C = {
+  navy: '#062a47',
+  green: '#85c441',
+  greenDark: '#0a8944',
+  deepGreen: '#214622',
+  orange: '#ed7c2e',
+  yellow: '#f5d50c',
+  teal: '#0d9389',
+  warmGray: '#ede6dd',
+  sage: '#cbe3aa',
+  white: '#ffffff',
+  charcoal: '#2f2f2f',
+  pink: '#ff6b9d',
+  hotPink: '#ff3d7f',
+  coral: '#ff7f7f',
+  sky1: '#1a4a6e',
+  sky2: '#0e3555',
+  sand: '#f0d9a0',
+  sandDark: '#c9a96e',
+};
+
+// ── Game State ──
+let state = 'title'; // title, playing, gameover
+let score = 0;
+let hiScore = 0;
+let distance = 0;
+let speed = 4.5;
+let baseSpeed = 4.5;
+let frame = 0;
+let shakeTimer = 0;
+let combo = 0;
+let comboTimer = 0;
+let particles = [];
+let floatingTexts = [];
+let obstacles = [];
+let collectibles = [];
+let clouds = [];
+let palmTrees = [];
+let bgBuildings = [];
+let groundDecor = [];
+let spawnTimer = 0;
+let collectibleTimer = 0;
+let lastObstacleX = 0;
+
+// ── Flamingo Player ──
+const player = {
+  x: 120,
+  y: 0,
+  w: 40,
+  h: 56,
+  vy: 0,
+  grounded: true,
+  ducking: false,
+  running: true,
+  legFrame: 0,
+  sunglassesGlint: 0,
+  invincible: 0,
+  trailTimer: 0,
+};
+
+const GROUND_Y = H - 60;
+const GRAVITY = 0.65;
+const JUMP_FORCE = -13;
+const DUCK_H = 32;
+
+// ── Input ──
+const keys = {};
+let jumpPressed = false;
+let duckPressed = false;
+
+document.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Space' || e.code === 'ArrowUp') {
+    e.preventDefault();
+    jumpPressed = true;
+  }
+  if (e.code === 'ArrowDown') {
+    e.preventDefault();
+    duckPressed = true;
+  }
+});
+document.addEventListener('keyup', e => {
+  keys[e.code] = false;
+  if (e.code === 'ArrowDown') duckPressed = false;
+});
+
+// Touch / click
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  jumpPressed = true;
+});
+document.getElementById('btn-jump').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  jumpPressed = true;
+});
+document.getElementById('btn-duck').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  duckPressed = true;
+});
+document.getElementById('btn-duck').addEventListener('pointerup', e => {
+  duckPressed = false;
+});
+document.getElementById('btn-duck').addEventListener('pointerleave', e => {
+  duckPressed = false;
+});
+
+
+// ── Pixel Art Drawing Helpers ──
+function drawRect(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x), Math.round(y), w, h);
+}
+
+function drawPixelText(text, x, y, size, color, align='left') {
+  ctx.fillStyle = color;
+  ctx.font = `${size}px "Press Start 2P", monospace`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, Math.round(x), Math.round(y));
+}
+
+// ── Draw Flamingo ──
+function drawFlamingo(px, py, ducking, legFrame, glint) {
+  const s = 2; // pixel scale
+  if (ducking) {
+    // Ducking flamingo — low profile, horizontal
+    // Body (horizontal oval)
+    drawRect(px-2*s, py-6*s, 20*s, 8*s, C.pink);
+    drawRect(px, py-8*s, 16*s, 2*s, C.pink);
+    drawRect(px+2*s, py+2*s, 12*s, 2*s, C.pink);
+    // Head peeking forward
+    drawRect(px+18*s, py-8*s, 6*s, 6*s, C.pink);
+    drawRect(px+20*s, py-10*s, 4*s, 2*s, C.pink);
+    // Beak
+    drawRect(px+24*s, py-8*s, 4*s, 3*s, C.orange);
+    drawRect(px+24*s, py-5*s, 3*s, 2*s, C.charcoal);
+    // Sunglasses
+    drawRect(px+20*s, py-9*s, 5*s, 3*s, C.charcoal);
+    if (glint > 0) drawRect(px+21*s, py-9*s, 2*s, 1*s, C.white);
+    // Legs tucked
+    drawRect(px+4*s, py+2*s, 2*s, 3*s, C.coral);
+    drawRect(px+10*s, py+2*s, 2*s, 3*s, C.coral);
+    // Tail feather
+    drawRect(px-4*s, py-6*s, 4*s, 4*s, C.hotPink);
+    drawRect(px-6*s, py-8*s, 3*s, 3*s, C.hotPink);
+  } else {
+    // Standing flamingo
+    // Neck
+    const neckSway = Math.sin(frame * 0.15) * 1;
+    drawRect(px+10*s+neckSway, py-24*s, 4*s, 12*s, C.pink);
+    drawRect(px+9*s+neckSway, py-22*s, 2*s, 8*s, C.pink);
+    // Head
+    const hx = px + 8*s + neckSway;
+    const hy = py - 28*s;
+    drawRect(hx, hy, 10*s, 7*s, C.pink);
+    drawRect(hx+2*s, hy-2*s, 6*s, 2*s, C.pink);
+    // Beak
+    drawRect(hx+10*s, hy+1*s, 6*s, 3*s, C.orange);
+    drawRect(hx+10*s, hy+4*s, 5*s, 2*s, C.charcoal);
+    // Eye / Sunglasses
+    drawRect(hx+4*s, hy+1*s, 7*s, 3*s, C.charcoal);
+    drawRect(hx+3*s, hy+1*s, 2*s, 3*s, C.charcoal);
+    if (glint > 0) {
+      drawRect(hx+5*s, hy+1*s, 2*s, 1*s, C.white);
+    }
+    // Body
+    drawRect(px+2*s, py-12*s, 16*s, 14*s, C.pink);
+    drawRect(px, py-10*s, 20*s, 10*s, C.pink);
+    drawRect(px+4*s, py-14*s, 12*s, 2*s, C.pink); // top curve
+    // Wing detail
+    drawRect(px+1*s, py-10*s, 3*s, 8*s, C.hotPink);
+    const wingFlap = Math.sin(frame * 0.2) * 2;
+    drawRect(px-2*s, py-8*s+wingFlap, 4*s, 5*s, C.hotPink);
+    // Tail
+    drawRect(px-2*s, py-8*s, 4*s, 5*s, C.hotPink);
+    drawRect(px-4*s, py-6*s, 3*s, 3*s, C.hotPink);
+    // Legs (animated)
+    const legA = Math.sin(legFrame * 0.25) * 4;
+    const legB = Math.sin(legFrame * 0.25 + Math.PI) * 4;
+    // Leg 1
+    drawRect(px+6*s, py+2*s, 2*s, 10*s, C.coral);
+    drawRect(px+5*s+legA, py+12*s, 4*s, 2*s, C.coral);
+    // Leg 2
+    drawRect(px+12*s, py+2*s, 2*s, 10*s, C.coral);
+    drawRect(px+11*s+legB, py+12*s, 4*s, 2*s, C.coral);
+  }
+}
+
+// ── Draw Palm Tree ──
+function drawPalmTree(x, y, size) {
+  const s = size;
+  // Trunk
+  drawRect(x-2*s, y-20*s, 4*s, 20*s, '#8B6914');
+  drawRect(x-1*s, y-20*s, 2*s, 20*s, '#a07d1c');
+  // Trunk segments
+  for (let i = 0; i < 5; i++) {
+    drawRect(x-3*s, y-4*s*i-2*s, 6*s, 1*s, '#6d5010');
+  }
+  // Fronds
+  const sway = Math.sin(frame * 0.03 + x) * 2;
+  for (let i = -3; i <= 3; i++) {
+    const angle = i * 0.45;
+    const len = (12 + Math.abs(i)*2) * s;
+    const fx = x + Math.cos(angle) * len + sway;
+    const fy = y - 20*s + Math.sin(angle) * len * 0.3 - 4*s;
+    ctx.strokeStyle = C.greenDark;
+    ctx.lineWidth = 3*s;
+    ctx.beginPath();
+    ctx.moveTo(x, y-20*s);
+    ctx.quadraticCurveTo(x + i*4*s + sway, y-24*s, fx, fy);
+    ctx.stroke();
+    // Leaf tips
+    ctx.strokeStyle = C.green;
+    ctx.lineWidth = 2*s;
+    ctx.beginPath();
+    ctx.moveTo(fx - 3*s, fy);
+    ctx.lineTo(fx + 2*s, fy + 2*s);
+    ctx.stroke();
+  }
+  // Coconuts
+  drawRect(x-2*s, y-21*s, 3*s, 3*s, '#5c3d0a');
+  drawRect(x+1*s, y-22*s, 3*s, 3*s, '#5c3d0a');
+}
+
+// ── Draw Obstacles ──
+function drawObstacle(obs) {
+  const x = obs.x, y = obs.y;
+  if (obs.type === 'tax') {
+    // IRS Tax Penalty — red warning sign
+    const s = 2;
+    // Post
+    drawRect(x+8*s, y, 4*s, 14*s, '#888');
+    // Sign
+    drawRect(x-2*s, y-12*s, 24*s, 16*s, '#cc2222');
+    drawRect(x, y-10*s, 20*s, 12*s, '#ee3333');
+    // Exclamation
+    drawRect(x+8*s, y-9*s, 4*s, 6*s, C.white);
+    drawRect(x+8*s, y-2*s, 4*s, 2*s, C.white);
+    // "TAX" text
+    drawPixelText('TAX', x+10*s, y+8*s, 7, C.white, 'center');
+  } else if (obs.type === 'deadline') {
+    // Missed Deadline — flying clock
+    const s = 2;
+    const bob = Math.sin(frame * 0.1 + obs.x) * 4;
+    const cy = y + bob;
+    // Clock body
+    ctx.fillStyle = C.yellow;
+    ctx.beginPath();
+    ctx.arc(x+10*s, cy+6*s, 10*s, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#cc9900';
+    ctx.beginPath();
+    ctx.arc(x+10*s, cy+6*s, 8*s, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = C.white;
+    ctx.beginPath();
+    ctx.arc(x+10*s, cy+6*s, 7*s, 0, Math.PI*2);
+    ctx.fill();
+    // Clock hands
+    ctx.strokeStyle = C.charcoal;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x+10*s, cy+6*s);
+    const ha = frame * 0.05;
+    ctx.lineTo(x+10*s + Math.cos(ha)*5*s, cy+6*s + Math.sin(ha)*5*s);
+    ctx.moveTo(x+10*s, cy+6*s);
+    ctx.lineTo(x+10*s + Math.cos(ha*3)*3*s, cy+6*s + Math.sin(ha*3)*3*s);
+    ctx.stroke();
+    // Red X
+    drawPixelText('!', x+10*s, cy-6*s, 10, '#cc2222', 'center');
+    // Wings
+    const wing = Math.sin(frame * 0.3) * 3;
+    drawRect(x-2*s, cy+2*s+wing, 6*s, 3*s, '#cc9900');
+    drawRect(x+16*s, cy+2*s-wing, 6*s, 3*s, '#cc9900');
+  } else if (obs.type === 'compliance') {
+    // Compliance Violation — stack of red tape
+    const s = 2;
+    for (let i = 0; i < 3; i++) {
+      drawRect(x-2*s, y+i*6*s-4*s, 24*s, 5*s, '#cc4444');
+      drawRect(x, y+i*6*s-3*s, 20*s, 3*s, '#ee6666');
+      // Lines on tape
+      drawRect(x+2*s, y+i*6*s-2*s, 16*s, 1*s, '#ffaaaa');
+    }
+    // Skull emoji approximation
+    drawRect(x+6*s, y-10*s, 8*s, 7*s, C.white);
+    drawRect(x+7*s, y-8*s, 2*s, 2*s, C.charcoal);
+    drawRect(x+11*s, y-8*s, 2*s, 2*s, C.charcoal);
+    drawRect(x+8*s, y-5*s, 4*s, 1*s, C.charcoal);
+  }
+}
+
+// ── Draw Collectibles ──
+function drawCollectible(col) {
+  const x = col.x, y = col.y;
+  const bob = Math.sin(frame * 0.08 + col.x * 0.1) * 3;
+  const s = 2;
+  if (col.type === 'paycheck') {
+    // Paycheck — green dollar
+    const cy = y + bob;
+    // Glow
+    ctx.fillStyle = 'rgba(133,196,65,0.15)';
+    ctx.beginPath();
+    ctx.arc(x+8*s, cy+6*s, 14*s, 0, Math.PI*2);
+    ctx.fill();
+    // Check background
+    drawRect(x-2*s, cy, 20*s, 12*s, C.sage);
+    drawRect(x, cy+1*s, 16*s, 10*s, C.green);
+    // Dollar sign
+    drawPixelText('$', x+8*s, cy+6*s, 12, C.white, 'center');
+    // Sparkle
+    if (frame % 30 < 8) {
+      drawRect(x+16*s, cy-2*s, 2*s, 2*s, C.yellow);
+      drawRect(x-4*s, cy+10*s, 2*s, 2*s, C.yellow);
+    }
+  } else if (col.type === 'bonus') {
+    // Bonus multiplier — golden star
+    const cy = y + bob;
+    const rot = frame * 0.05;
+    ctx.fillStyle = C.yellow;
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = rot + (i * Math.PI * 2 / 5) - Math.PI/2;
+      const r = 12*s;
+      const ir = 5*s;
+      ctx.lineTo(x+8*s + Math.cos(a)*r, cy+6*s + Math.sin(a)*r);
+      const a2 = a + Math.PI/5;
+      ctx.lineTo(x+8*s + Math.cos(a2)*ir, cy+6*s + Math.sin(a2)*ir);
+    }
+    ctx.closePath();
+    ctx.fill();
+    drawPixelText('2X', x+8*s, cy+7*s, 7, C.charcoal, 'center');
+  } else if (col.type === 'w2') {
+    // W-2 Form
+    const cy = y + bob;
+    drawRect(x, cy, 16*s, 20*s, C.white);
+    drawRect(x+1*s, cy+1*s, 14*s, 3*s, C.navy);
+    drawPixelText('W-2', x+8*s, cy+3*s, 6, C.white, 'center');
+    // Lines
+    for (let i = 0; i < 4; i++) {
+      drawRect(x+2*s, cy+6*s+i*3*s, 10*s, 1*s, '#ccc');
+    }
+    // Glow
+    ctx.fillStyle = 'rgba(13,147,137,0.12)';
+    ctx.beginPath();
+    ctx.arc(x+8*s, cy+10*s, 16*s, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+// ── Particles ──
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random()-0.5) * 6,
+      vy: (Math.random()-0.5) * 6 - 2,
+      life: 30 + Math.random()*20,
+      maxLife: 50,
+      color,
+      size: 2 + Math.random()*3
+    });
+  }
+}
+
+function spawnFloatingText(x, y, text, color) {
+  floatingTexts.push({
+    x, y, text, color,
+    vy: -2,
+    life: 40,
+    maxLife: 40
+  });
+}
+
+// ── Background Generation ──
+function initBackground() {
+  clouds = [];
+  for (let i = 0; i < 6; i++) {
+    clouds.push({
+      x: Math.random() * W * 1.5,
+      y: 30 + Math.random() * 60,
+      w: 40 + Math.random() * 60,
+      speed: 0.2 + Math.random() * 0.3,
+    });
+  }
+  palmTrees = [];
+  for (let i = 0; i < 4; i++) {
+    palmTrees.push({
+      x: 200 + i * 220 + Math.random()*80,
+      size: 1.5 + Math.random() * 0.5,
+      layer: Math.random() > 0.5 ? 0 : 1,
+    });
+  }
+  bgBuildings = [];
+  for (let i = 0; i < 8; i++) {
+    bgBuildings.push({
+      x: i * 120 + Math.random()*40,
+      w: 30 + Math.random()*40,
+      h: 40 + Math.random()*60,
+      color: i % 2 === 0 ? '#0c3a5a' : '#0e4268',
+      windows: Math.floor(Math.random()*3) + 2,
+    });
+  }
+}
+
+// ── INIT ──
+function resetGame() {
+  score = 0;
+  distance = 0;
+  speed = baseSpeed;
+  combo = 0;
+  comboTimer = 0;
+  frame = 0;
+  obstacles = [];
+  collectibles = [];
+  particles = [];
+  floatingTexts = [];
+  spawnTimer = 0;
+  collectibleTimer = 0;
+  lastObstacleX = W + 200;
+  player.y = GROUND_Y;
+  player.vy = 0;
+  player.grounded = true;
+  player.ducking = false;
+  player.invincible = 0;
+  player.legFrame = 0;
+  initBackground();
+}
+
+resetGame();
+
+// ── Spawning ──
+function spawnObstacle() {
+  const types = ['tax', 'deadline', 'compliance'];
+  const weights = [0.4, 0.35, 0.25];
+  let r = Math.random(), cumulative = 0, type = types[0];
+  for (let i = 0; i < types.length; i++) {
+    cumulative += weights[i];
+    if (r < cumulative) { type = types[i]; break; }
+  }
+
+  let y = GROUND_Y;
+  let h = 40;
+  let w = 48;
+  if (type === 'deadline') {
+    y = GROUND_Y - 40 - Math.random()*30; // flying
+    h = 30;
+    w = 44;
+  } else if (type === 'compliance') {
+    h = 36;
+    w = 48;
+  } else {
+    h = 44;
+    w = 44;
+  }
+
+  obstacles.push({
+    x: W + 50,
+    y: y - h,
+    w, h, type,
+    scored: false,
+  });
+}
+
+function spawnCollectible() {
+  const types = ['paycheck', 'paycheck', 'paycheck', 'bonus', 'w2'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  const yOptions = [GROUND_Y - 50, GROUND_Y - 80, GROUND_Y - 120];
+  const y = yOptions[Math.floor(Math.random() * yOptions.length)];
+
+  collectibles.push({
+    x: W + 50,
+    y,
+    w: 32, h: 24,
+    type,
+    collected: false,
+  });
+}
+
+// ── Collision ──
+function boxOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x &&
+         a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+// ── UPDATE ──
+function update() {
+  frame++;
+
+  if (state === 'title') {
+    // Animate title screen flamingo
+    player.legFrame += speed;
+    player.sunglassesGlint = Math.sin(frame * 0.02) > 0.8 ? 1 : 0;
+    // Background scroll
+    clouds.forEach(c => { c.x -= c.speed; if (c.x < -80) c.x = W + 40; });
+
+    if (jumpPressed) {
+      jumpPressed = false;
+      state = 'playing';
+      resetGame();
+    }
+    return;
+  }
+
+  if (state === 'gameover') {
+    if (jumpPressed) {
+      jumpPressed = false;
+      state = 'playing';
+      resetGame();
+    }
+    // Still update particles
+    particles = particles.filter(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life--;
+      return p.life > 0;
+    });
+    floatingTexts = floatingTexts.filter(t => {
+      t.y += t.vy; t.life--;
+      return t.life > 0;
+    });
+    return;
+  }
+
+  // ── Playing ──
+  distance += speed;
+  speed = baseSpeed + distance * 0.0003;
+  if (speed > 12) speed = 12;
+
+  // Combo
+  if (comboTimer > 0) {
+    comboTimer--;
+    if (comboTimer <= 0) combo = 0;
+  }
+
+  // Player jump
+  if (jumpPressed && player.grounded) {
+    player.vy = JUMP_FORCE;
+    player.grounded = false;
+    jumpPressed = false;
+  } else {
+    jumpPressed = false;
+  }
+
+  // Duck
+  player.ducking = duckPressed && player.grounded;
+
+  // Physics
+  if (!player.grounded) {
+    player.vy += GRAVITY;
+    // Fast fall when ducking in air
+    if (duckPressed) player.vy += 0.5;
+    player.y += player.vy;
+    if (player.y >= GROUND_Y) {
+      player.y = GROUND_Y;
+      player.vy = 0;
+      player.grounded = true;
+    }
+  }
+
+  player.legFrame += speed;
+  player.sunglassesGlint = Math.sin(frame * 0.02) > 0.85 ? 1 : 0;
+
+  if (player.invincible > 0) player.invincible--;
+
+  // Trail particles when running fast
+  player.trailTimer++;
+  if (player.trailTimer % 4 === 0 && speed > 6) {
+    particles.push({
+      x: player.x - 5,
+      y: player.y + (player.ducking ? -5 : 5),
+      vx: -1 - Math.random(),
+      vy: (Math.random()-0.5)*0.5,
+      life: 15,
+      maxLife: 15,
+      color: C.pink,
+      size: 2+Math.random()*2,
+    });
+  }
+
+  // Spawn obstacles
+  spawnTimer += speed;
+  if (spawnTimer > 180 + Math.random()*100) {
+    spawnObstacle();
+    spawnTimer = 0;
+  }
+
+  // Spawn collectibles
+  collectibleTimer += speed;
+  if (collectibleTimer > 120 + Math.random()*80) {
+    spawnCollectible();
+    collectibleTimer = 0;
+  }
+
+  // Update obstacles
+  const ph = player.ducking ? DUCK_H : player.h;
+  const py = player.ducking ? player.y - DUCK_H : player.y - player.h;
+  const playerBox = { x: player.x+6, y: py+4, w: player.w-12, h: ph-8 };
+
+  obstacles = obstacles.filter(obs => {
+    obs.x -= speed;
+    if (obs.x < -60) return false;
+
+    if (!obs.scored && player.invincible <= 0) {
+      const obsBox = { x: obs.x+4, y: obs.y+4, w: obs.w-8, h: obs.h-8 };
+      if (boxOverlap(playerBox, obsBox)) {
+        // HIT!
+        state = 'gameover';
+        if (score > hiScore) hiScore = score;
+        shakeTimer = 15;
+        spawnParticles(player.x + 20, player.y - 20, '#ff4444', 20);
+        spawnParticles(player.x + 20, player.y - 20, C.orange, 10);
+        spawnFloatingText(player.x, player.y - 40, obs.type === 'tax' ? 'TAX PENALTY!' : obs.type === 'deadline' ? 'MISSED DEADLINE!' : 'VIOLATION!', '#ff4444');
+        return true;
+      }
+    }
+    return true;
+  });
+
+  // Update collectibles
+  collectibles = collectibles.filter(col => {
+    col.x -= speed;
+    if (col.x < -40) return false;
+
+    if (!col.collected) {
+      const colBox = { x: col.x, y: col.y, w: col.w, h: col.h };
+      if (boxOverlap(playerBox, colBox)) {
+        col.collected = true;
+        combo++;
+        comboTimer = 90; // frames to keep combo
+
+        let points = 0;
+        let text = '';
+        if (col.type === 'paycheck') {
+          points = 100 * Math.max(1, combo);
+          text = combo > 1 ? `$${points} x${combo}!` : `+$${points}`;
+          spawnParticles(col.x+16, col.y+12, C.green, 8);
+        } else if (col.type === 'bonus') {
+          points = 500;
+          text = `BONUS $${points}!`;
+          spawnParticles(col.x+16, col.y+12, C.yellow, 15);
+          player.invincible = 120;
+        } else if (col.type === 'w2') {
+          points = 250 * Math.max(1, combo);
+          text = `W-2 FILED! +$${points}`;
+          spawnParticles(col.x+16, col.y+12, C.teal, 12);
+        }
+
+        score += points;
+        spawnFloatingText(col.x, col.y - 10, text, col.type === 'bonus' ? C.yellow : C.green);
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // Distance score
+  if (frame % 6 === 0) score += 1;
+
+  // Update particles
+  particles = particles.filter(p => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life--;
+    return p.life > 0;
+  });
+  floatingTexts = floatingTexts.filter(t => {
+    t.y += t.vy; t.life--;
+    return t.life > 0;
+  });
+
+  // Background
+  clouds.forEach(c => { c.x -= c.speed * speed * 0.2; if (c.x < -80) c.x = W + 40 + Math.random()*100; });
+  palmTrees.forEach(pt => {
+    pt.x -= speed * (pt.layer === 0 ? 0.4 : 0.7);
+    if (pt.x < -60) pt.x = W + 60 + Math.random()*100;
+  });
+  bgBuildings.forEach(b => {
+    b.x -= speed * 0.3;
+    if (b.x < -80) b.x = W + 40 + Math.random()*60;
+  });
+
+  // HUD
+  document.getElementById('hud-score').textContent = `$${score.toLocaleString()}`;
+  document.getElementById('hud-hi').textContent = `HI $${hiScore.toLocaleString()}`;
+}
+
+// ── DRAW ──
+function draw() {
+  // Screen shake
+  let sx = 0, sy = 0;
+  if (shakeTimer > 0) {
+    sx = (Math.random()-0.5) * shakeTimer * 0.8;
+    sy = (Math.random()-0.5) * shakeTimer * 0.8;
+    shakeTimer--;
+  }
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  // Sky gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+  skyGrad.addColorStop(0, '#0b2942');
+  skyGrad.addColorStop(0.4, '#14506e');
+  skyGrad.addColorStop(0.7, '#1a6a70');
+  skyGrad.addColorStop(1, '#ed7c2e');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Sun (setting)
+  ctx.fillStyle = '#ffcc44';
+  ctx.beginPath();
+  ctx.arc(W * 0.75, GROUND_Y - 20, 40, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffe066';
+  ctx.beginPath();
+  ctx.arc(W * 0.75, GROUND_Y - 20, 32, 0, Math.PI * 2);
+  ctx.fill();
+  // Sun rays
+  ctx.fillStyle = 'rgba(255,220,80,0.08)';
+  ctx.beginPath();
+  ctx.arc(W * 0.75, GROUND_Y - 20, 100, 0, Math.PI*2);
+  ctx.fill();
+
+  // Buildings (background)
+  bgBuildings.forEach(b => {
+    drawRect(b.x, GROUND_Y - b.h, b.w, b.h, b.color);
+    // Windows
+    for (let row = 0; row < b.windows; row++) {
+      for (let col = 0; col < 3; col++) {
+        const lit = Math.sin(frame*0.01 + b.x + row*3 + col*7) > 0.3;
+        drawRect(b.x + 4 + col*10, GROUND_Y - b.h + 6 + row*14, 6, 8,
+          lit ? '#ffe066' : '#0a3350');
+      }
+    }
+  });
+
+  // Clouds
+  clouds.forEach(c => {
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, c.w/2, c.w/5, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(c.x+c.w*0.3, c.y-5, c.w/3, c.w/6, 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Palm trees (background layer)
+  palmTrees.filter(pt => pt.layer === 0).forEach(pt => {
+    ctx.globalAlpha = 0.4;
+    drawPalmTree(pt.x, GROUND_Y, pt.size * 0.7);
+    ctx.globalAlpha = 1;
+  });
+
+  // Ground
+  drawRect(0, GROUND_Y, W, H - GROUND_Y, C.sand);
+  // Ground line
+  drawRect(0, GROUND_Y, W, 3, C.sandDark);
+  // Ground texture
+  for (let i = 0; i < 40; i++) {
+    const gx = ((i * 23 + frame * speed * 0.5) % (W + 20)) - 10;
+    drawRect(gx, GROUND_Y + 8 + (i%3)*12, 12 + (i%4)*4, 2, '#d4be82');
+  }
+
+  // Palm trees (foreground layer)
+  palmTrees.filter(pt => pt.layer === 1).forEach(pt => {
+    drawPalmTree(pt.x, GROUND_Y, pt.size);
+  });
+
+  // Collectibles
+  collectibles.forEach(col => {
+    if (!col.collected) drawCollectible(col);
+  });
+
+  // Obstacles
+  obstacles.forEach(obs => drawObstacle(obs));
+
+  // Player
+  const playerDrawY = player.ducking ? player.y : player.y;
+  // Invincibility flash
+  if (player.invincible > 0 && frame % 4 < 2) {
+    ctx.globalAlpha = 0.6;
+    // Rainbow glow
+    ctx.fillStyle = `hsl(${frame*8}, 80%, 60%)`;
+    ctx.beginPath();
+    ctx.arc(player.x + 20, playerDrawY - 20, 35, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  drawFlamingo(player.x, playerDrawY, player.ducking, player.legFrame, player.sunglassesGlint);
+
+  // Combo indicator
+  if (combo > 1 && comboTimer > 0) {
+    const comboAlpha = comboTimer / 90;
+    ctx.globalAlpha = comboAlpha;
+    drawPixelText(`${combo}x COMBO!`, player.x + 50, player.y - player.h - 20, 10, C.yellow, 'left');
+    ctx.globalAlpha = 1;
+  }
+
+  // Particles
+  particles.forEach(p => {
+    ctx.globalAlpha = p.life / p.maxLife;
+    drawRect(p.x, p.y, p.size, p.size, p.color);
+  });
+  ctx.globalAlpha = 1;
+
+  // Floating texts
+  floatingTexts.forEach(t => {
+    ctx.globalAlpha = t.life / t.maxLife;
+    drawPixelText(t.text, t.x, t.y, 9, t.color, 'center');
+  });
+  ctx.globalAlpha = 1;
+
+  // ── TITLE SCREEN ──
+  if (state === 'title') {
+    // Overlay
+    ctx.fillStyle = 'rgba(6,42,71,0.7)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Title
+    drawPixelText('PAYROLL RUN', W/2, H*0.28, 28, C.green, 'center');
+    drawPixelText('PAYROLL RUN', W/2-1, H*0.28-1, 28, C.sage, 'center');
+
+    // Subtitle
+    drawPixelText('A Greenshades Adventure', W/2, H*0.38, 10, C.warmGray, 'center');
+
+    // Flamingo
+    drawFlamingo(W/2 - 20, H*0.62, false, frame, Math.sin(frame*0.05) > 0.7 ? 1 : 0);
+
+    // Instructions
+    const blink = Math.sin(frame * 0.06) > 0;
+    if (blink) {
+      drawPixelText('PRESS SPACE OR TAP TO START', W/2, H*0.78, 9, C.white, 'center');
+    }
+
+    drawPixelText('COLLECT: $Paychecks  W-2s  2X Bonuses', W/2, H*0.87, 7, C.sage, 'center');
+    drawPixelText('DODGE: Tax Penalties  Deadlines  Violations', W/2, H*0.93, 7, C.coral, 'center');
+  }
+
+  // ── GAME OVER ──
+  if (state === 'gameover') {
+    ctx.fillStyle = 'rgba(6,42,71,0.75)';
+    ctx.fillRect(0, 0, W, H);
+
+    drawPixelText('PAYROLL FAILED!', W/2, H*0.28, 22, C.orange, 'center');
+
+    drawPixelText(`EARNINGS: $${score.toLocaleString()}`, W/2, H*0.42, 12, C.green, 'center');
+    if (score >= hiScore && hiScore > 0) {
+      drawPixelText('NEW HIGH SCORE!', W/2, H*0.50, 10, C.yellow, 'center');
+    }
+    drawPixelText(`BEST: $${hiScore.toLocaleString()}`, W/2, H*0.57, 10, C.warmGray, 'center');
+
+    const blink = Math.sin(frame * 0.06) > 0;
+    if (blink) {
+      drawPixelText('TAP OR PRESS SPACE TO RETRY', W/2, H*0.72, 9, C.white, 'center');
+    }
+
+    // Fun messages based on score
+    let msg = '';
+    if (score < 500) msg = 'Payroll Intern';
+    else if (score < 1500) msg = 'Junior Accountant';
+    else if (score < 3000) msg = 'Payroll Specialist';
+    else if (score < 6000) msg = 'HR Manager';
+    else if (score < 10000) msg = 'VP of People Ops';
+    else msg = 'Chief Payroll Officer';
+
+    drawPixelText(`RANK: ${msg}`, W/2, H*0.84, 8, C.teal, 'center');
+  }
+
+  ctx.restore();
+}
+
+// ── GAME LOOP ──
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
