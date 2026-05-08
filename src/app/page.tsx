@@ -1,3 +1,4 @@
+import { GreenshadesLogo } from "@/components/GreenshadesLogo";
 import { RegistrationForm } from "@/components/RegistrationForm";
 
 export default function HomePage() {
@@ -10,8 +11,9 @@ export default function HomePage() {
       </div>
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
-        <p className="mb-2 font-serif text-sm uppercase tracking-[0.3em] text-gsGreen">
-          Greenshades · {eventName}
+        <GreenshadesLogo className="mb-3 h-7 w-auto" />
+        <p className="mb-1 font-serif text-xs uppercase tracking-[0.3em] text-white/60">
+          {eventName}
         </p>
         <h1 className="font-pixel text-3xl text-gsGreen sm:text-4xl">PAYROLL RUN</h1>
         <p className="mt-3 mb-8 font-serif text-lg text-white/85">
