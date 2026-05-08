@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateRegistration } from "@/lib/validation";
-import { createPlayer, findPlayerByEmailAndEvent } from "@/lib/db";
+import {
+  createPlayer,
+  findPlayerByEmailAndEvent,
+  markHubspotSubmitted,
+} from "@/lib/db";
 import { setSessionCookie } from "@/lib/session";
+import { submitToHubSpot } from "@/lib/hubspot";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG;
+  const eventName = process.env.NEXT_PUBLIC_EVENT_NAME || eventSlug;
   if (!eventSlug) {
     return NextResponse.json(
       { error: "Server misconfigured: NEXT_PUBLIC_EVENT_SLUG missing." },
@@ -43,7 +49,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   setSessionCookie(player.session_token);
 
-  // HubSpot Forms API submission lands in Phase 4.
+  // Fire-and-forget in spirit: we await the HubSpot call so we can record
+  // the outcome in the players table, but errors never bubble up to the
+  // user. The booth flow must keep working if HubSpot is down.
+  const submitted = await submitToHubSpot({
+    firstName,
+    lastName,
+    email,
+    company,
+    eventSlug,
+    eventName: eventName ?? eventSlug,
+  });
+  if (submitted) {
+    await markHubspotSubmitted(player.id);
+  }
 
   return NextResponse.json({ ok: true, returning: false });
 }
