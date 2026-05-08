@@ -85,7 +85,7 @@ export function GameCanvas() {
         type="button"
         onClick={toggleSound}
         aria-label={soundOn ? "Mute sound" : "Unmute sound"}
-        className="absolute right-3 top-3 rounded-md bg-black/40 px-2 py-1 font-pixel text-[0.55rem] text-gsGreen backdrop-blur transition hover:bg-black/60"
+        className="absolute left-3 top-3 rounded-md bg-black/40 px-2 py-1 font-pixel text-[0.55rem] text-gsGreen backdrop-blur transition hover:bg-black/60"
       >
         {soundOn ? "♪ ON" : "♪ OFF"}
       </button>
