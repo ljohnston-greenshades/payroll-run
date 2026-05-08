@@ -27,7 +27,11 @@ export default async function LeaderboardPage() {
       </header>
 
       <section className="flex-1 overflow-hidden px-12 py-6">
-        <LeaderboardTV initialEntries={entries} initialTotal={total} />
+        <LeaderboardTV
+          initialEntries={entries}
+          initialTotal={total}
+          eventSlug={eventSlug}
+        />
       </section>
 
       <footer className="flex items-center justify-between border-t border-gsGreen/30 px-12 py-6">
