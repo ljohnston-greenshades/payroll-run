@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:seed": "tsx scripts/seed-db.ts",
-    "db:reset-event": "tsx scripts/reset-event.ts"
+    "db:seed": "tsx --env-file=.env.local scripts/seed-db.ts",
+    "db:reset-event": "tsx --env-file=.env.local scripts/reset-event.ts"
   },
   "dependencies": {
     "@vercel/postgres": "^0.10.0",
@@ -22,7 +22,6 @@
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",
-    "dotenv": "^16.4.5",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.15",
     "postcss": "^8.4.47",
