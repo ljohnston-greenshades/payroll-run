@@ -37,6 +37,7 @@ import {
   drawSun,
   drawTitleOverlay,
 } from "./renderer";
+import { SoundEngine } from "./sound";
 import {
   drawCollectible,
   drawFlamingo,
@@ -66,6 +67,9 @@ export interface GameOptions {
   // and after a retry. Used to ping /api/game-start so server-side
   // anti-cheat can compare wall-clock elapsed against reported duration.
   onPlayStart?: () => void;
+  // If true, procedural sound effects are generated via Web Audio.
+  // Default off — booth tablet should opt in via ?sound=on.
+  sound?: boolean;
 }
 
 const OBSTACLE_TYPES: ObstacleType[] = ["tax", "deadline", "compliance"];
@@ -81,6 +85,7 @@ const COLLECTIBLE_BAG: CollectibleType[] = [
 export class Game {
   private ctx: CanvasRenderingContext2D;
   private input: InputHandler;
+  private sound: SoundEngine;
   private rafId: number | null = null;
   private running = false;
 
@@ -128,7 +133,12 @@ export class Game {
     if (!ctx) throw new Error("2D canvas context unavailable");
     this.ctx = ctx;
     this.input = new InputHandler(canvas);
+    this.sound = new SoundEngine(options.sound ?? false);
     this.initBackground();
+  }
+
+  setSoundEnabled(enabled: boolean): void {
+    this.sound.setEnabled(enabled);
   }
 
   start(): void {
@@ -263,6 +273,7 @@ export class Game {
     if (this.input.consumeJump() && this.player.grounded) {
       this.player.vy = JUMP_FORCE;
       this.player.grounded = false;
+      this.sound.jump();
     }
 
     this.player.ducking = this.input.state.duckPressed && this.player.grounded;
@@ -339,6 +350,7 @@ export class Game {
             "CLOSE CALL!",
             Colors.yellow,
           );
+          this.sound.nearMiss();
         }
       }
       this.lastObstacleX = Math.min(this.lastObstacleX, obs.x);
@@ -363,15 +375,18 @@ export class Game {
         points = 100 * Math.max(1, this.combo);
         text = this.combo > 1 ? `$${points} x${this.combo}!` : `+$${points}`;
         spawnParticles(this.particles, col.x + 16, col.y + 12, Colors.green, 8);
+        this.sound.paycheck(this.combo);
       } else if (col.type === "bonus") {
         points = 500;
         text = `BONUS $${points}!`;
         spawnParticles(this.particles, col.x + 16, col.y + 12, Colors.yellow, 15);
         this.player.invincible = INVINCIBILITY_FRAMES;
+        this.sound.bonus();
       } else {
         points = 250 * Math.max(1, this.combo);
         text = `W-2 FILED! +$${points}`;
         spawnParticles(this.particles, col.x + 16, col.y + 12, Colors.teal, 12);
+        this.sound.w2();
       }
 
       this.score += points;
@@ -484,6 +499,7 @@ export class Game {
         ? "MISSED DEADLINE!"
         : "VIOLATION!";
     spawnFloatingText(this.floatingTexts, this.player.x, this.player.y - 40, msg, Colors.red);
+    this.sound.death();
 
     const durationSeconds = Math.max(
       1,
@@ -518,6 +534,7 @@ export class Game {
         10,
       );
       spawnParticles(this.particles, W / 2, H / 2, Colors.yellow, 24);
+      this.sound.promotion();
     }
   }
 
