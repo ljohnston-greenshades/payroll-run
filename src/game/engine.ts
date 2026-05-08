@@ -324,29 +324,52 @@ export class Game {
       this.collectibleTimer = 0;
     }
 
-    const playerBox = this.playerHitbox();
+    const playerBoxes = this.playerHitboxes();
 
     this.obstacles = this.obstacles.filter((obs) => {
       obs.x -= this.speed;
       if (obs.x < -60) return false;
 
       if (this.player.invincible <= 0) {
-        const obsBox = this.obstacleHitbox(obs);
-        if (boxOverlap(playerBox, obsBox)) {
+        const collision = this.obstacleCollision(obs);
+        let hit = false;
+        for (const pb of playerBoxes) {
+          for (const ob of collision.boxes) {
+            if (boxOverlap(pb, ob)) {
+              hit = true;
+              break;
+            }
+          }
+          if (hit) break;
+          if (collision.circle) {
+            const c = collision.circle;
+            if (circleOverlapsBox(c.cx, c.cy, c.r, pb)) {
+              hit = true;
+              break;
+            }
+          }
+        }
+        if (hit) {
           this.die(obs.type);
           return true;
         }
-        if (!obs.nearMissed && nearMiss(playerBox, obsBox, NEAR_MISS_PX)) {
-          obs.nearMissed = true;
-          this.score += NEAR_MISS_BONUS;
-          spawnFloatingText(
-            this.floatingTexts,
-            obs.x,
-            obs.y - 14,
-            "CLOSE CALL!",
-            Colors.yellow,
-          );
-          this.sound.nearMiss();
+        if (!obs.nearMissed) {
+          const bounds = this.obstacleBounds(obs);
+          for (const pb of playerBoxes) {
+            if (nearMiss(pb, bounds, NEAR_MISS_PX)) {
+              obs.nearMissed = true;
+              this.score += NEAR_MISS_BONUS;
+              spawnFloatingText(
+                this.floatingTexts,
+                obs.x,
+                obs.y - 14,
+                "CLOSE CALL!",
+                Colors.yellow,
+              );
+              this.sound.nearMiss();
+              break;
+            }
+          }
         }
       }
       this.lastObstacleX = Math.min(this.lastObstacleX, obs.x);
@@ -359,7 +382,8 @@ export class Game {
       if (col.collected) return true;
 
       const colBox: Box = { x: col.x, y: col.y, w: col.w, h: col.h };
-      if (!boxOverlap(playerBox, colBox)) return true;
+      const grabbed = playerBoxes.some((pb) => boxOverlap(pb, colBox));
+      if (!grabbed) return true;
 
       col.collected = true;
       this.combo++;
@@ -417,76 +441,73 @@ export class Game {
     }
   }
 
-  // Each hitbox below is hand-tuned to match the sprite extents drawn
+  // Multi-box hitboxes that exactly match the sprite rectangles drawn
   // in src/game/sprites.ts. Coordinates are derived directly from the
-  // drawFlamingo / drawObstacle calls (s = pixel scale = 2).
-  //
-  // Standing flamingo visual extents (from drawFlamingo, py = bottom):
-  //   head:   px+16 → px+36, py-60 → py-42
-  //   neck:   px+18 → px+26, py-48 → py-24
-  //   body:   px-2  → px+40, py-24 → py+4
-  //   legs:   px+10 → px+28, py+4  → py+28   (excluded — graze-friendly)
-  //
-  // Ducking flamingo visual extents:
-  //   body:   px-4  → px+40, py-12 → py+4
-  //   head:   px+36 → px+56, py-16 → py-4
-  //
-  // The hitboxes below cover the body + neck (standing) or body + head
-  // (ducking), shrunk a few pixels so the very edge of the sprite is a
-  // graze-zone instead of a death-zone.
-  private playerHitbox(): Box {
+  // drawFlamingo / drawObstacle calls (s = pixel scale = 2). Multiple
+  // tight boxes per entity instead of one loose box means collision
+  // mirrors the visible silhouette: if it looks like you clipped it,
+  // you clipped it.
+  private playerHitboxes(): Box[] {
+    const px = this.player.x;
+    const py = this.player.y;
     if (this.player.ducking) {
-      return {
-        x: this.player.x + 2,
-        y: this.player.y - 14,
-        w: 50,
-        h: 16,
-      };
+      return [
+        { x: px - 4, y: py - 12, w: 40, h: 16 }, // body
+        { x: px + 36, y: py - 16, w: 20, h: 12 }, // head + beak
+      ];
     }
-    return {
-      x: this.player.x + 6,
-      y: this.player.y - 44,
-      w: 30,
-      h: 44,
-    };
+    return [
+      { x: px + 16, y: py - 60, w: 20, h: 18 }, // head
+      { x: px + 18, y: py - 48, w: 8, h: 24 }, // neck
+      { x: px - 2, y: py - 24, w: 42, h: 28 }, // body + wing/tail
+    ];
   }
 
-  // Per-type obstacle hitboxes. Each one is a tighter version of what
-  // is actually drawn by drawObstacle, so collisions match what the
-  // player sees instead of using obs.y/h (which is just the spawn
-  // anchor and doesn't match the rendered sprite for any of the
-  // three obstacle types).
-  private obstacleHitbox(obs: Obstacle): Box {
+  // Per-type obstacle collision shape. Boxes for rectangular sprites,
+  // circle for the clock so we don't leave dead corners around the
+  // disc. Matches the rendered sprite extents 1:1.
+  private obstacleCollision(obs: Obstacle): {
+    boxes: Box[];
+    circle?: { cx: number; cy: number; r: number };
+  } {
     const x = obs.x;
     const y = obs.y;
     if (obs.type === "tax") {
-      // Sign is drawn at (x-4, y-24, 48, 32). Inset 4px each side.
+      // Sign (red, x-4 → x+44, y-24 → y+8) plus post (x+16 → x+24, y → y+28).
       return {
-        x: x,
-        y: y - 20,
-        w: 40,
-        h: 24,
+        boxes: [
+          { x: x - 4, y: y - 24, w: 48, h: 32 },
+          { x: x + 16, y: y, w: 8, h: 28 },
+        ],
       };
     }
     if (obs.type === "deadline") {
-      // Clock is a circle at center (x+20, y+12+bob) with radius 20.
-      // Inscribed square (sqrt(2) * r ≈ 28) is centered on the circle.
+      // Clock is a true circle. Use circle-vs-box collision.
       const bob = Math.sin(this.frame * 0.1 + obs.x) * 4;
       return {
-        x: x + 6,
-        y: y - 2 + bob,
-        w: 28,
-        h: 28,
+        boxes: [],
+        circle: { cx: x + 20, cy: y + 12 + bob, r: 20 },
       };
     }
-    // garnishment — paper document spans y to y+36. Hitbox covers
-    // most of the paper, leaving a small graze zone on each edge.
+    // garnishment — paper rectangle, x → x+48, y → y+36
     return {
-      x: x + 4,
-      y: y + 4,
-      w: 40,
-      h: 28,
+      boxes: [{ x, y, w: 48, h: 36 }],
     };
+  }
+
+  // Bounding box of an obstacle for near-miss / spawn-overlap checks
+  // where we just need a single rough region.
+  private obstacleBounds(obs: Obstacle): Box {
+    const x = obs.x;
+    const y = obs.y;
+    if (obs.type === "tax") {
+      return { x: x - 4, y: y - 24, w: 48, h: 56 };
+    }
+    if (obs.type === "deadline") {
+      const bob = Math.sin(this.frame * 0.1 + obs.x) * 4;
+      return { x, y: y - 8 + bob, w: 40, h: 40 };
+    }
+    return { x, y, w: 48, h: 36 };
   }
 
   private spawnObstacle(): void {
@@ -545,12 +566,12 @@ export class Game {
     for (const y of positions) {
       const proposed = { x, y, w, h };
       const blocked = this.obstacles.some((o) => {
-        const obsBox = this.obstacleHitbox(o);
+        const bounds = this.obstacleBounds(o);
         const expanded = {
-          x: obsBox.x - margin,
-          y: obsBox.y - margin,
-          w: obsBox.w + margin * 2,
-          h: obsBox.h + margin * 2,
+          x: bounds.x - margin,
+          y: bounds.y - margin,
+          w: bounds.w + margin * 2,
+          h: bounds.h + margin * 2,
         };
         return boxOverlap(proposed, expanded);
       });
@@ -708,6 +729,21 @@ function boxOverlap(a: Box, b: Box): boolean {
   return (
     a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
   );
+}
+
+// True if any pixel of the circle (cx, cy, r) lies inside the box.
+// Standard "closest-point on box to circle center" distance check.
+function circleOverlapsBox(
+  cx: number,
+  cy: number,
+  r: number,
+  box: Box,
+): boolean {
+  const closestX = Math.max(box.x, Math.min(cx, box.x + box.w));
+  const closestY = Math.max(box.y, Math.min(cy, box.y + box.h));
+  const dx = cx - closestX;
+  const dy = cy - closestY;
+  return dx * dx + dy * dy < r * r;
 }
 
 function nearMiss(player: Box, obs: Box, threshold: number): boolean {
