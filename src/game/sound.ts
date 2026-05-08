@@ -5,9 +5,14 @@
 
 type OscType = OscillatorType;
 
+const MUSIC_URL = "/audio/payroll-run.mp3";
+const MUSIC_VOLUME = 0.35;
+
 export class SoundEngine {
   private ctx: AudioContext | null = null;
   private enabled: boolean;
+  private music: HTMLAudioElement | null = null;
+  private musicWanted = false;
 
   constructor(enabled: boolean) {
     this.enabled = enabled;
@@ -15,10 +20,41 @@ export class SoundEngine {
 
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
+    this.reconcileMusic();
   }
 
   isEnabled(): boolean {
     return this.enabled;
+  }
+
+  startMusic(): void {
+    this.musicWanted = true;
+    this.reconcileMusic();
+  }
+
+  stopMusic(): void {
+    this.musicWanted = false;
+    if (this.music) {
+      this.music.pause();
+      this.music.currentTime = 0;
+    }
+  }
+
+  private reconcileMusic(): void {
+    if (typeof window === "undefined") return;
+    if (!this.musicWanted || !this.enabled) {
+      this.music?.pause();
+      return;
+    }
+    if (!this.music) {
+      this.music = new Audio(MUSIC_URL);
+      this.music.loop = true;
+      this.music.volume = MUSIC_VOLUME;
+    }
+    // Browsers may block autoplay until a user gesture; the catch
+    // keeps that from spamming the console. The next user input will
+    // unlock it on its own (e.g., the jump press that started play).
+    this.music.play().catch(() => {});
   }
 
   private ensureContext(): AudioContext | null {
