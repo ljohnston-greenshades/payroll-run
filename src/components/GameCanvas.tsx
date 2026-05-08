@@ -5,11 +5,12 @@ import { Game, type GameOverInfo } from "@/game/engine";
 import { setDimensions } from "@/game/constants";
 import { GameOverOverlay, type ScoreResult } from "./GameOverOverlay";
 
+interface GameCanvasProps {
+  screenName?: string;
+}
+
 function readSoundParam(): boolean {
   if (typeof window === "undefined") return true;
-  // Sound on by default. ?sound=off to start muted (e.g., for QR-scan
-  // phone players in a quiet setting). ?sound=on is still accepted for
-  // explicitness but is now redundant.
   return new URLSearchParams(window.location.search).get("sound") !== "off";
 }
 
@@ -18,22 +19,22 @@ function isPortraitViewport(): boolean {
   return window.innerHeight > window.innerWidth && window.innerWidth < 900;
 }
 
-export function GameCanvas() {
+export function GameCanvas({ screenName }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<Game | null>(null);
   const [gameOverInfo, setGameOverInfo] = useState<GameOverInfo | null>(null);
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
+  const [showMobileButtons, setShowMobileButtons] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // 9:16 portrait fills mobile screens; 2:1 landscape stays the
-    // default for tablets / desktops / booth tablets in landscape.
     if (isPortraitViewport()) {
       setDimensions(450, 800);
+      setShowMobileButtons(true);
     } else {
       setDimensions(800, 400);
     }
@@ -43,6 +44,7 @@ export function GameCanvas() {
 
     const game = new Game(canvas, {
       sound: initialSoundOn,
+      screenName,
       onPlayStart: () => {
         setGameOverInfo(null);
         setScoreResult(null);
@@ -77,7 +79,7 @@ export function GameCanvas() {
       game.stop();
       gameRef.current = null;
     };
-  }, []);
+  }, [screenName]);
 
   const handleRetry = () => {
     gameRef.current?.restart();
@@ -89,29 +91,72 @@ export function GameCanvas() {
     gameRef.current?.setSoundEnabled(next);
   };
 
+  const buttonHandlers = {
+    duckDown: (e: React.PointerEvent) => {
+      e.preventDefault();
+      gameRef.current?.setDucking(true);
+    },
+    duckUp: (e: React.PointerEvent) => {
+      e.preventDefault();
+      gameRef.current?.setDucking(false);
+    },
+    jumpDown: (e: React.PointerEvent) => {
+      e.preventDefault();
+      gameRef.current?.pressJump();
+    },
+  };
+
   return (
-    <div className="relative mx-auto aspect-[9/16] w-full max-w-md md:aspect-[2/1] md:max-w-[800px]">
-      <canvas
-        ref={canvasRef}
-        className="block h-full w-full rounded-lg shadow-2xl outline-none touch-none"
-        style={{ imageRendering: "pixelated" }}
-        tabIndex={0}
-        aria-label="Payroll Run game canvas"
-      />
-      <button
-        type="button"
-        onClick={toggleSound}
-        aria-label={soundOn ? "Mute sound" : "Unmute sound"}
-        className="absolute left-3 top-3 rounded-md bg-black/40 px-2 py-1 font-pixel text-[0.55rem] text-gsGreen backdrop-blur transition hover:bg-black/60"
-      >
-        {soundOn ? "♪ ON" : "♪ OFF"}
-      </button>
-      {gameOverInfo ? (
-        <GameOverOverlay
-          result={scoreResult}
-          submitting={submitting}
-          onRetry={handleRetry}
+    <div className="flex w-full flex-col items-center gap-3">
+      <div className="relative mx-auto aspect-[9/16] max-h-[calc(100dvh-180px)] w-full max-w-md md:aspect-[2/1] md:max-h-none md:max-w-[800px]">
+        <canvas
+          ref={canvasRef}
+          className="block h-full w-full rounded-lg shadow-2xl outline-none touch-none"
+          style={{ imageRendering: "pixelated" }}
+          tabIndex={0}
+          aria-label="Payroll Run game canvas"
         />
+        <button
+          type="button"
+          onClick={toggleSound}
+          aria-label={soundOn ? "Mute sound" : "Unmute sound"}
+          className="absolute right-3 top-3 rounded-md bg-black/40 px-2 py-1 font-pixel text-[0.55rem] text-gsGreen backdrop-blur transition hover:bg-black/60"
+        >
+          {soundOn ? "♪ ON" : "♪ OFF"}
+        </button>
+        {gameOverInfo ? (
+          <GameOverOverlay
+            result={scoreResult}
+            submitting={submitting}
+            onRetry={handleRetry}
+          />
+        ) : null}
+      </div>
+
+      {showMobileButtons ? (
+        <div className="grid w-full max-w-md grid-cols-2 gap-3 px-2 md:hidden">
+          <button
+            type="button"
+            onPointerDown={buttonHandlers.duckDown}
+            onPointerUp={buttonHandlers.duckUp}
+            onPointerLeave={buttonHandlers.duckUp}
+            onPointerCancel={buttonHandlers.duckUp}
+            onContextMenu={(e) => e.preventDefault()}
+            aria-label="Duck"
+            className="select-none rounded-lg border-2 border-gsGreen bg-gsNavy/80 py-5 font-pixel text-base uppercase tracking-wider text-gsGreen shadow-lg shadow-gsGreen/15 transition active:translate-y-[2px] active:bg-gsGreen/15"
+          >
+            ▼ Duck
+          </button>
+          <button
+            type="button"
+            onPointerDown={buttonHandlers.jumpDown}
+            onContextMenu={(e) => e.preventDefault()}
+            aria-label="Jump"
+            className="select-none rounded-lg bg-gsGreen py-5 font-pixel text-base uppercase tracking-wider text-gsNavy shadow-lg shadow-gsGreen/30 transition active:translate-y-[2px] active:brightness-110"
+          >
+            ▲ Jump
+          </button>
+        </div>
       ) : null}
     </div>
   );

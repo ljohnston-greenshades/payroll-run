@@ -64,6 +64,15 @@ export class InputHandler {
     return was;
   }
 
+  // Public hooks for DOM controls (mobile JUMP/DUCK buttons).
+  pressJump(): void {
+    this.state.jumpPressed = true;
+  }
+
+  setDucking(active: boolean): void {
+    this.state.duckPressed = active;
+  }
+
   detach(): void {
     for (const c of this.cleanups) c();
     this.cleanups = [];
