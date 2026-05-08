@@ -2,7 +2,6 @@ import {
   BASE_SPEED,
   COMBO_WINDOW_FRAMES,
   Colors,
-  DUCK_H,
   GRAVITY,
   GROUND_Y,
   H,
@@ -332,16 +331,7 @@ export class Game {
       if (obs.x < -60) return false;
 
       if (this.player.invincible <= 0) {
-        // Deadline obstacle bobs visually; track that in collision so
-        // dodges feel honest instead of clipping the offset version.
-        const bob =
-          obs.type === "deadline" ? Math.sin(this.frame * 0.1 + obs.x) * 4 : 0;
-        const obsBox: Box = {
-          x: obs.x + 8,
-          y: obs.y + 8 + bob,
-          w: obs.w - 16,
-          h: obs.h - 16,
-        };
+        const obsBox = this.obstacleHitbox(obs);
         if (boxOverlap(playerBox, obsBox)) {
           this.die(obs.type);
           return true;
@@ -427,18 +417,76 @@ export class Game {
     }
   }
 
+  // Each hitbox below is hand-tuned to match the sprite extents drawn
+  // in src/game/sprites.ts. Coordinates are derived directly from the
+  // drawFlamingo / drawObstacle calls (s = pixel scale = 2).
+  //
+  // Standing flamingo visual extents (from drawFlamingo, py = bottom):
+  //   head:   px+16 → px+36, py-60 → py-42
+  //   neck:   px+18 → px+26, py-48 → py-24
+  //   body:   px-2  → px+40, py-24 → py+4
+  //   legs:   px+10 → px+28, py+4  → py+28   (excluded — graze-friendly)
+  //
+  // Ducking flamingo visual extents:
+  //   body:   px-4  → px+40, py-12 → py+4
+  //   head:   px+36 → px+56, py-16 → py-4
+  //
+  // The hitboxes below cover the body + neck (standing) or body + head
+  // (ducking), shrunk a few pixels so the very edge of the sprite is a
+  // graze-zone instead of a death-zone.
   private playerHitbox(): Box {
-    const ph = this.player.ducking ? DUCK_H : this.player.h;
-    const py = this.player.ducking
-      ? this.player.y - DUCK_H
-      : this.player.y - this.player.h;
-    // Tightened from prototype so visual near-clips don't kill — the
-    // sprite outline is generous around the hitbox.
+    if (this.player.ducking) {
+      return {
+        x: this.player.x + 2,
+        y: this.player.y - 14,
+        w: 50,
+        h: 16,
+      };
+    }
     return {
-      x: this.player.x + 10,
-      y: py + 8,
-      w: this.player.w - 20,
-      h: ph - 14,
+      x: this.player.x + 6,
+      y: this.player.y - 44,
+      w: 30,
+      h: 44,
+    };
+  }
+
+  // Per-type obstacle hitboxes. Each one is a tighter version of what
+  // is actually drawn by drawObstacle, so collisions match what the
+  // player sees instead of using obs.y/h (which is just the spawn
+  // anchor and doesn't match the rendered sprite for any of the
+  // three obstacle types).
+  private obstacleHitbox(obs: Obstacle): Box {
+    const x = obs.x;
+    const y = obs.y;
+    if (obs.type === "tax") {
+      // Sign is drawn at (x-4, y-24, 48, 32). Inset 4px each side.
+      return {
+        x: x,
+        y: y - 20,
+        w: 40,
+        h: 24,
+      };
+    }
+    if (obs.type === "deadline") {
+      // Clock is a circle at center (x+20, y+12+bob) with radius 20.
+      // Use the inscribed square so wings/handles don't trigger hits.
+      const bob = Math.sin(this.frame * 0.1 + obs.x) * 4;
+      return {
+        x: x + 6,
+        y: y - 4 + bob,
+        w: 28,
+        h: 28,
+      };
+    }
+    // compliance — three tape rows span y-8 to y+26; skull above is
+    // decorative and intentionally not part of the hitbox so a tight
+    // jump over the stack doesn't kill on the skull.
+    return {
+      x: x + 2,
+      y: y - 6,
+      w: 40,
+      h: 30,
     };
   }
 
@@ -498,11 +546,12 @@ export class Game {
     for (const y of positions) {
       const proposed = { x, y, w, h };
       const blocked = this.obstacles.some((o) => {
+        const obsBox = this.obstacleHitbox(o);
         const expanded = {
-          x: o.x - margin,
-          y: o.y - margin,
-          w: o.w + margin * 2,
-          h: o.h + margin * 2,
+          x: obsBox.x - margin,
+          y: obsBox.y - margin,
+          w: obsBox.w + margin * 2,
+          h: obsBox.h + margin * 2,
         };
         return boxOverlap(proposed, expanded);
       });
