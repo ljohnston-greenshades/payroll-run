@@ -172,7 +172,7 @@ export function drawTitleOverlay(
   }
   drawPixelText(
     ctx,
-    "COLLECT: $Paychecks  W-2s  2X Bonuses",
+    "COLLECT: PAYCHECKS  W-2s  GS SHIELDS",
     W / 2,
     H * 0.87,
     7,
@@ -181,7 +181,7 @@ export function drawTitleOverlay(
   );
   drawPixelText(
     ctx,
-    "DODGE: Tax Penalties  Deadlines  Violations",
+    "DODGE: IRS  DEADLINES  GARNISHMENTS",
     W / 2,
     H * 0.93,
     7,
