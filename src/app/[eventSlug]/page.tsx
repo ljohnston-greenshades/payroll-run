@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { sql } from "@vercel/postgres";
+import { GreenshadesLogo } from "@/components/GreenshadesLogo";
 import { LeaderboardTV } from "@/components/LeaderboardTV";
 import { QRCode } from "@/components/QRCode";
 import { getLeaderboard, getPlayerCount } from "@/lib/db";
@@ -63,9 +64,7 @@ export default async function EventLeaderboardPage({
   return (
     <main className="flex h-screen flex-col overflow-hidden">
       <header className="flex items-center justify-between border-b border-gsGreen/30 px-12 py-6">
-        <div className="font-serif text-2xl font-bold">
-          <span className="text-gsGreen">G</span>reenshades
-        </div>
+        <GreenshadesLogo className="h-9 w-auto" />
         <div className="flex flex-col items-center">
           <h1 className="font-pixel text-3xl text-gsGreen md:text-4xl">
             PAYROLL RUN — LEADERBOARD
