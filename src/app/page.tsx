@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { GreenshadesLogo } from "@/components/GreenshadesLogo";
+import { HowToPlay } from "@/components/HowToPlay";
 import { RegistrationForm } from "@/components/RegistrationForm";
 
 export default function HomePage() {
@@ -55,6 +56,7 @@ export default function HomePage() {
           </p>
 
           <RegistrationForm />
+          <HowToPlay />
         </div>
       </section>
     </main>

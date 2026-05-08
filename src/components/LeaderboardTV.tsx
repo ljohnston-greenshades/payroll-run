@@ -97,16 +97,16 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug }: Props
                   isHighlight ? "bg-gsGreen/30" : ""
                 }`}
               >
-                <td className="w-24 py-3 text-center font-pixel text-3xl text-gsGreen">
+                <td className="w-12 py-2 text-center font-pixel text-lg text-gsGreen sm:w-16 md:w-24 md:py-3 md:text-3xl">
                   {medal ?? `${idx + 1}`}
                 </td>
-                <td className="py-3 font-pixel text-2xl text-white">
+                <td className="py-2 font-pixel text-sm text-white sm:text-base md:py-3 md:text-2xl">
                   {entry.screen_name}
                 </td>
-                <td className="py-3 text-right font-pixel text-2xl text-gsGreen">
+                <td className="py-2 text-right font-pixel text-sm text-gsGreen sm:text-base md:py-3 md:text-2xl">
                   ${entry.high_score.toLocaleString()}
                 </td>
-                <td className="hidden py-3 pl-8 font-serif text-xl text-white/70 md:table-cell">
+                <td className="hidden py-3 pl-8 font-serif text-xl text-white/70 lg:table-cell">
                   {entry.rank_title}
                 </td>
               </tr>

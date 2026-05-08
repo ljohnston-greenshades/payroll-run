@@ -62,23 +62,25 @@ export default async function EventLeaderboardPage({
   ]);
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden">
-      <header className="flex items-center justify-between border-b border-gsGreen/30 px-12 py-6">
-        <GreenshadesLogo className="h-9 w-auto" />
+    <main className="flex min-h-[100dvh] flex-col">
+      <header className="flex flex-col items-center gap-2 border-b border-gsGreen/30 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-12 md:py-6">
+        <GreenshadesLogo className="h-6 w-auto md:h-9" />
         <div className="flex flex-col items-center">
-          <h1 className="font-pixel text-3xl text-gsGreen md:text-4xl">
+          <h1 className="text-center font-pixel text-base text-gsGreen sm:text-xl md:text-3xl lg:text-4xl">
             PAYROLL RUN — LEADERBOARD
           </h1>
           {!isCurrent ? (
-            <p className="mt-1 font-serif text-xs uppercase tracking-widest text-yellow-300/80">
+            <p className="mt-1 font-serif text-[0.6rem] uppercase tracking-widest text-yellow-300/80 md:text-xs">
               Archive
             </p>
           ) : null}
         </div>
-        <div className="font-serif text-lg text-white/70">{displayName}</div>
+        <div className="font-serif text-xs text-white/70 md:text-lg">
+          {displayName}
+        </div>
       </header>
 
-      <section className="flex-1 overflow-hidden px-12 py-6">
+      <section className="flex-1 overflow-y-auto px-3 py-4 md:overflow-hidden md:px-12 md:py-6">
         <LeaderboardTV
           initialEntries={entries}
           initialTotal={total}
@@ -86,13 +88,15 @@ export default async function EventLeaderboardPage({
         />
       </section>
 
-      <footer className="flex items-center justify-between border-t border-gsGreen/30 px-12 py-6">
-        <div className="font-pixel text-2xl text-white/80">
+      <footer className="flex items-center justify-between border-t border-gsGreen/30 px-4 py-3 md:px-12 md:py-6">
+        <div className="font-pixel text-sm text-white/80 md:text-2xl">
           <span className="text-gsGreen">{total.toLocaleString()}</span>{" "}
           {isCurrent ? "players today" : "players"}
         </div>
         {isCurrent && gameUrl ? (
-          <QRCode value={gameUrl} size={130} caption={displayName} />
+          <div className="hidden md:block">
+            <QRCode value={gameUrl} size={130} caption={displayName} />
+          </div>
         ) : null}
       </footer>
     </main>

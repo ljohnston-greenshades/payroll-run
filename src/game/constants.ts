@@ -17,11 +17,17 @@ export const JUMP_FORCE = -14;
 export const DUCK_H = 32;
 
 export const BASE_SPEED = 4.5;
-export const MAX_SPEED = 12;
-export const SPEED_RAMP_PER_DISTANCE = 0.0003;
+export const MAX_SPEED = 10;
+export const SPEED_RAMP_PER_DISTANCE = 0.0002;
 
-export const SPAWN_TIMER_AT_BASE = 280;
-export const SPAWN_TIMER_AT_MAX = 120;
+// Spawn pacing is driven by distance traveled (not speed) so the
+// difficulty curve is independent of how fast the world is moving.
+// Holds easy spacing for SPAWN_RAMP_START distance, then linearly
+// ramps tighter through SPAWN_RAMP_END.
+export const SPAWN_TIMER_AT_BASE = 500;
+export const SPAWN_TIMER_AT_MAX = 180;
+export const SPAWN_RAMP_START = 4000;
+export const SPAWN_RAMP_END = 30000;
 export const SPAWN_MIN_GAP_PX = 100;
 
 export const COMBO_WINDOW_FRAMES = 90;
@@ -82,11 +88,18 @@ export function rankIndexFor(score: number): number {
   return idx;
 }
 
-// Linear interp from base spawn timer at BASE_SPEED to faster spawn at MAX_SPEED.
-export function spawnIntervalFor(speed: number): number {
+// Distance-based spawn interval. Easy intro for SPAWN_RAMP_START
+// distance, then linearly tightens. Independent of speed so the
+// difficulty curve is predictable rather than coupled to the
+// speed multiplier.
+export function spawnIntervalFor(distance: number): number {
+  if (distance < SPAWN_RAMP_START) return SPAWN_TIMER_AT_BASE;
   const t = Math.max(
     0,
-    Math.min(1, (speed - BASE_SPEED) / (MAX_SPEED - BASE_SPEED)),
+    Math.min(
+      1,
+      (distance - SPAWN_RAMP_START) / (SPAWN_RAMP_END - SPAWN_RAMP_START),
+    ),
   );
   return SPAWN_TIMER_AT_BASE - t * (SPAWN_TIMER_AT_BASE - SPAWN_TIMER_AT_MAX);
 }

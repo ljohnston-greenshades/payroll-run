@@ -155,7 +155,7 @@ export function drawObstacle(
     drawRect(ctx, x, y - 10 * s, 20 * s, 12 * s, "#ee3333");
     drawRect(ctx, x + 8 * s, y - 9 * s, 4 * s, 6 * s, Colors.white);
     drawRect(ctx, x + 8 * s, y - 2 * s, 4 * s, 2 * s, Colors.white);
-    drawPixelText(ctx, "IRS", x + 10 * s, y + 8 * s, 7, Colors.white, "center");
+    drawPixelText(ctx, "IRS", x + 10 * s, y - 4 * s, 11, Colors.white, "center");
     return;
   }
   if (obs.type === "deadline") {
@@ -197,7 +197,7 @@ export function drawObstacle(
   // Red header banner with "GARNISH" text
   drawRect(ctx, x, y, 24 * s, 4 * s, "#cc2222");
   drawRect(ctx, x + 1 * s, y, 22 * s, 3 * s, "#ee3333");
-  drawPixelText(ctx, "GARNISH", x + 12 * s, y + 2 * s, 5, Colors.white, "center");
+  drawPixelText(ctx, "GARNISH", x + 12 * s, y + 2 * s, 7, Colors.white, "center");
   // Body text lines
   for (let i = 0; i < 3; i++) {
     drawRect(ctx, x + 3 * s, y + 6 * s + i * 2 * s, 18 * s, 1 * s, "#666");
@@ -312,7 +312,7 @@ export function drawCollectible(
   const cy = y + bob;
   drawRect(ctx, x, cy, 16 * s, 20 * s, Colors.white);
   drawRect(ctx, x + 1 * s, cy + 1 * s, 14 * s, 3 * s, Colors.navy);
-  drawPixelText(ctx, "W-2", x + 8 * s, cy + 3 * s, 6, Colors.white, "center");
+  drawPixelText(ctx, "W-2", x + 8 * s, cy + 3 * s, 8, Colors.white, "center");
   for (let i = 0; i < 4; i++) {
     drawRect(ctx, x + 2 * s, cy + 6 * s + i * 3 * s, 10 * s, 1 * s, "#ccc");
   }

@@ -323,7 +323,7 @@ export class Game {
 
     this.spawnTimer += this.speed;
     if (
-      this.spawnTimer > spawnIntervalFor(this.speed) + Math.random() * 60 &&
+      this.spawnTimer > spawnIntervalFor(this.distance) + Math.random() * 120 &&
       W + 50 - this.lastObstacleX >= SPAWN_MIN_GAP_PX
     ) {
       this.spawnObstacle();
