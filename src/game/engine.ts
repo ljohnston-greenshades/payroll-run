@@ -69,6 +69,8 @@ export interface GameOptions {
   // If true, procedural sound effects are generated via Web Audio.
   // Default off — booth tablet should opt in via ?sound=on.
   sound?: boolean;
+  // Player's screen name, drawn in the canvas top-left HUD.
+  screenName?: string;
 }
 
 const OBSTACLE_TYPES: ObstacleType[] = ["tax", "deadline", "garnishment"];
@@ -138,6 +140,15 @@ export class Game {
 
   setSoundEnabled(enabled: boolean): void {
     this.sound.setEnabled(enabled);
+  }
+
+  // External input hooks for mobile JUMP / DUCK buttons.
+  pressJump(): void {
+    this.input.pressJump();
+  }
+
+  setDucking(active: boolean): void {
+    this.input.setDucking(active);
   }
 
   start(): void {
@@ -717,6 +728,17 @@ export class Game {
 
     if (this.state !== "title") {
       drawHud(ctx, this.score, this.hiScore);
+    }
+    if (this.options.screenName) {
+      drawPixelText(
+        ctx,
+        this.options.screenName.toUpperCase(),
+        12,
+        18,
+        7,
+        Colors.green,
+        "left",
+      );
     }
 
     if (this.state === "title") drawTitleOverlay(ctx, this.frame);
