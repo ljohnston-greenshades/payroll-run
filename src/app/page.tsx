@@ -7,39 +7,40 @@ export default function HomePage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center px-6 py-8">
-      <div className="flex w-full max-w-lg flex-col items-center text-center">
+      <div className="flex w-full max-w-4xl flex-col items-center">
         <GreenshadesLogo className="mb-2 h-6 w-auto" />
-        <p className="mb-4 font-serif text-[0.65rem] uppercase tracking-[0.3em] text-white/60">
+        <p className="mb-8 font-serif text-[0.65rem] uppercase tracking-[0.3em] text-white/60">
           {eventName}
         </p>
 
-        <div className="mb-2 flex items-end justify-center gap-4 sm:gap-6">
-          <Image
-            src="/flo.png"
-            alt="Flo the flamingo"
-            width={160}
-            height={200}
-            unoptimized
-            priority
-            className="flo-bounce drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
-            style={{ imageRendering: "pixelated" }}
-          />
-          <div className="flex flex-col items-start pb-3 text-left">
-            <h1 className="font-pixel text-2xl leading-tight text-gsGreen sm:text-3xl">
+        <div className="flex w-full flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
+          <div className="flex flex-col items-center md:items-start">
+            <Image
+              src="/flo.png"
+              alt="Flo the flamingo"
+              width={260}
+              height={336}
+              unoptimized
+              priority
+              className="flo-bounce drop-shadow-[0_10px_24px_rgba(0,0,0,0.6)]"
+              style={{ imageRendering: "pixelated" }}
+            />
+            <p className="mt-3 hidden font-pixel text-[0.6rem] uppercase tracking-widest text-gsGreen md:block">
+              Meet Flo
+            </p>
+          </div>
+
+          <div className="flex w-full max-w-md flex-col items-center text-center md:items-start md:text-left">
+            <h1 className="font-pixel text-3xl leading-tight text-gsGreen sm:text-4xl">
               PAYROLL
               <br />
               RUN
             </h1>
-            <p className="mt-2 font-serif text-sm text-white/85 sm:text-base">
-              How long can you keep
-              <br />
-              payroll running?
+            <p className="mb-5 mt-2 font-serif text-base text-white/85">
+              How long can you keep payroll running?
             </p>
+            <RegistrationForm />
           </div>
-        </div>
-
-        <div className="mt-4 w-full">
-          <RegistrationForm />
         </div>
       </div>
     </main>

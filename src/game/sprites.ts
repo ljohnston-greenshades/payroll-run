@@ -1,6 +1,23 @@
 import { Colors } from "./constants";
 import type { Collectible, Obstacle } from "./types";
 
+// Lazily-loaded Greenshades logo for the shield power-up. The image
+// lives at /public/gs-logo.png; until it loads (or if it fails to
+// load), drawCollectible falls back to the procedural shield draw.
+let gsLogo: HTMLImageElement | null = null;
+let gsLogoReady = false;
+function getGsLogo(): HTMLImageElement | null {
+  if (typeof window === "undefined") return null;
+  if (!gsLogo) {
+    gsLogo = new Image();
+    gsLogo.onload = () => {
+      gsLogoReady = true;
+    };
+    gsLogo.src = "/gs-logo.png";
+  }
+  return gsLogoReady ? gsLogo : null;
+}
+
 export function drawRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -224,17 +241,42 @@ export function drawCollectible(
     return;
   }
   if (col.type === "shield") {
-    // Greenshades compliance shield with checkmark — represents
-    // protection from payroll/tax disasters. 5s of invincibility.
+    // Greenshades shield power-up — uses the official gs-logo.png if
+    // it's loaded, otherwise falls back to a procedural green shield.
     const cy = y + bob;
     const cx = x + 8 * s;
     const cyMid = cy + 8 * s;
-    // Glow
-    ctx.fillStyle = "rgba(133,196,65,0.22)";
+
+    // Glow halo behind the logo
+    ctx.fillStyle = "rgba(133,196,65,0.28)";
     ctx.beginPath();
-    ctx.arc(cx, cyMid, 14 * s, 0, Math.PI * 2);
+    ctx.arc(cx, cyMid, 16 * s, 0, Math.PI * 2);
     ctx.fill();
-    // Shield outline (dark green border)
+    // Tighter inner glow
+    ctx.fillStyle = "rgba(133,196,65,0.18)";
+    ctx.beginPath();
+    ctx.arc(cx, cyMid, 12 * s, 0, Math.PI * 2);
+    ctx.fill();
+
+    const logo = getGsLogo();
+    if (logo) {
+      // Fit logo into a target area while preserving aspect ratio.
+      const target = 22 * s;
+      const aspect = logo.width / logo.height;
+      let drawW: number;
+      let drawH: number;
+      if (aspect >= 1) {
+        drawW = target;
+        drawH = target / aspect;
+      } else {
+        drawH = target;
+        drawW = target * aspect;
+      }
+      ctx.drawImage(logo, cx - drawW / 2, cyMid - drawH / 2, drawW, drawH);
+      return;
+    }
+
+    // Fallback shield (asset not loaded yet)
     ctx.fillStyle = Colors.deepGreen;
     ctx.beginPath();
     ctx.moveTo(cx, cy - 1 * s);
@@ -245,7 +287,6 @@ export function drawCollectible(
     ctx.lineTo(cx - 9 * s, cy + 3 * s);
     ctx.closePath();
     ctx.fill();
-    // Inner shield (Greenshades green)
     ctx.fillStyle = Colors.green;
     ctx.beginPath();
     ctx.moveTo(cx, cy + 1 * s);
@@ -256,7 +297,6 @@ export function drawCollectible(
     ctx.lineTo(cx - 7.5 * s, cy + 4.5 * s);
     ctx.closePath();
     ctx.fill();
-    // Checkmark
     ctx.strokeStyle = Colors.white;
     ctx.lineWidth = 3 * s;
     ctx.lineCap = "round";

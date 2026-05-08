@@ -103,17 +103,17 @@ export function RegistrationForm() {
           required
         />
       </div>
-      <Field
-        id="email"
-        type="email"
-        label="Work email"
-        value={form.email}
-        onChange={update("email")}
-        error={fieldError("email")}
-        autoComplete="email"
-        required
-      />
       <div className="grid grid-cols-2 gap-3">
+        <Field
+          id="email"
+          type="email"
+          label="Work email"
+          value={form.email}
+          onChange={update("email")}
+          error={fieldError("email")}
+          autoComplete="email"
+          required
+        />
         <Field
           id="company"
           label="Company"
@@ -123,16 +123,16 @@ export function RegistrationForm() {
           autoComplete="organization"
           required
         />
-        <Field
-          id="screenName"
-          label="Screen name"
-          value={form.screenName}
-          onChange={update("screenName")}
-          error={fieldError("screenName")}
-          maxLength={12}
-          hint="Shown on leaderboard"
-        />
       </div>
+      <Field
+        id="screenName"
+        label="Screen name"
+        value={form.screenName}
+        onChange={update("screenName")}
+        error={fieldError("screenName")}
+        maxLength={12}
+        hint="Shown on the leaderboard. Defaults to your first name."
+      />
 
       {generalError ? (
         <p className="text-sm text-red-300" role="alert">
