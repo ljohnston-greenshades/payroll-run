@@ -115,7 +115,7 @@ export class Game {
   private bgBuildings: BgBuilding[] = [];
   private spawnTimer = 0;
   private collectibleTimer = 0;
-  private lastObstacleX = W + 200;
+  private lastObstacleX = -Infinity;
 
   constructor(canvas: HTMLCanvasElement, private options: GameOptions = {}) {
     canvas.width = W;
@@ -188,7 +188,7 @@ export class Game {
     this.floatingTexts = [];
     this.spawnTimer = 0;
     this.collectibleTimer = 0;
-    this.lastObstacleX = W + 200;
+    this.lastObstacleX = -Infinity;
     this.highestRankIndex = 0;
     this.startedAt = performance.now();
     this.player.y = GROUND_Y;
