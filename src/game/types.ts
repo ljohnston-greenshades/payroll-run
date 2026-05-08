@@ -14,7 +14,7 @@ export interface Player {
   trailTimer: number;
 }
 
-export type ObstacleType = "tax" | "deadline" | "compliance";
+export type ObstacleType = "tax" | "deadline" | "garnishment";
 
 export interface Obstacle {
   x: number;
@@ -26,7 +26,7 @@ export interface Obstacle {
   passed: boolean;
 }
 
-export type CollectibleType = "paycheck" | "w2" | "bonus";
+export type CollectibleType = "paycheck" | "w2" | "shield";
 
 export interface Collectible {
   x: number;
