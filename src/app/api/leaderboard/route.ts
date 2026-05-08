@@ -1,15 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getLeaderboard, getPlayerCount } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(): Promise<NextResponse> {
-  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG;
+const EVENT_SLUG_PATTERN = /^[a-z0-9-]+$/;
+
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const requested = req.nextUrl.searchParams.get("event");
+  const eventSlug = requested ?? process.env.NEXT_PUBLIC_EVENT_SLUG;
   if (!eventSlug) {
     return NextResponse.json(
       { error: "event_slug_missing" },
       { status: 500 },
+    );
+  }
+  if (!EVENT_SLUG_PATTERN.test(eventSlug)) {
+    return NextResponse.json(
+      { error: "invalid_event_slug" },
+      { status: 400 },
     );
   }
 

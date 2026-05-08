@@ -10,6 +10,7 @@ const MEDALS = ["🏆", "🥈", "🥉"];
 interface Props {
   initialEntries: LeaderboardEntry[];
   initialTotal: number;
+  eventSlug: string;
 }
 
 interface LeaderboardResponse {
@@ -21,7 +22,7 @@ function entryKey(entry: LeaderboardEntry): string {
   return `${entry.screen_name}:${entry.high_score}`;
 }
 
-export function LeaderboardTV({ initialEntries, initialTotal }: Props) {
+export function LeaderboardTV({ initialEntries, initialTotal, eventSlug }: Props) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>(initialEntries);
   const [total, setTotal] = useState(initialTotal);
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set());
@@ -29,9 +30,10 @@ export function LeaderboardTV({ initialEntries, initialTotal }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+    const url = `/api/leaderboard?event=${encodeURIComponent(eventSlug)}`;
     const tick = async () => {
       try {
-        const res = await fetch("/api/leaderboard", { cache: "no-store" });
+        const res = await fetch(url, { cache: "no-store" });
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as LeaderboardResponse;
         if (cancelled) return;
@@ -70,7 +72,7 @@ export function LeaderboardTV({ initialEntries, initialTotal }: Props) {
       cancelled = true;
       clearInterval(id);
     };
-  }, []);
+  }, [eventSlug]);
 
   if (entries.length === 0) {
     return (
