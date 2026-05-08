@@ -6,7 +6,7 @@ import type { Collectible, Obstacle } from "./types";
 // load), drawCollectible falls back to the procedural shield draw.
 let gsLogo: HTMLImageElement | null = null;
 let gsLogoReady = false;
-function getGsLogo(): HTMLImageElement | null {
+export function getGsLogo(): HTMLImageElement | null {
   if (typeof window === "undefined") return null;
   if (!gsLogo) {
     gsLogo = new Image();
