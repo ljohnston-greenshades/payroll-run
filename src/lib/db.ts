@@ -180,3 +180,107 @@ export async function getLeaderboardPosition(
   const total = Number(rows[0]?.total ?? 0);
   return { position: ahead + 1, total };
 }
+
+// ── Admin queries ─────────────────────────────────────────────────────
+
+export interface PlayerWithStats {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  company: string | null;
+  screen_name: string;
+  hubspot_submitted: boolean;
+  created_at: Date;
+  best_score: number | null;
+  game_count: number;
+}
+
+export async function getAllPlayersWithStats(
+  eventSlug: string,
+): Promise<PlayerWithStats[]> {
+  const { rows } = await sql<PlayerWithStats>`
+    SELECT
+      p.id, p.first_name, p.last_name, p.email, p.company, p.screen_name,
+      p.hubspot_submitted, p.created_at,
+      MAX(s.score) AS best_score,
+      COUNT(s.id)::int AS game_count
+    FROM players p
+    LEFT JOIN scores s
+      ON s.player_id = p.id AND s.event_slug = ${eventSlug}
+    WHERE p.event_slug = ${eventSlug}
+    GROUP BY p.id
+    ORDER BY MAX(s.score) DESC NULLS LAST, p.created_at DESC
+  `;
+  return rows;
+}
+
+export interface EventStats {
+  total_players: number;
+  total_games: number;
+  avg_score: number;
+  max_score: number;
+}
+
+export async function getEventStats(eventSlug: string): Promise<EventStats> {
+  const { rows } = await sql<{
+    total_players: string;
+    total_games: string;
+    avg_score: string;
+    max_score: string;
+  }>`
+    SELECT
+      (SELECT COUNT(*)::text FROM players WHERE event_slug = ${eventSlug}) AS total_players,
+      (SELECT COUNT(*)::text FROM scores WHERE event_slug = ${eventSlug}) AS total_games,
+      (SELECT COALESCE(ROUND(AVG(score)), 0)::text FROM scores WHERE event_slug = ${eventSlug}) AS avg_score,
+      (SELECT COALESCE(MAX(score), 0)::text FROM scores WHERE event_slug = ${eventSlug}) AS max_score
+  `;
+  const r = rows[0];
+  return {
+    total_players: Number(r?.total_players ?? 0),
+    total_games: Number(r?.total_games ?? 0),
+    avg_score: Number(r?.avg_score ?? 0),
+    max_score: Number(r?.max_score ?? 0),
+  };
+}
+
+export interface RecentScore {
+  id: string;
+  screen_name: string;
+  score: number;
+  duration_seconds: number;
+  rate: number;
+  created_at: Date;
+}
+
+export async function getRecentScores(
+  eventSlug: string,
+  limit = 50,
+): Promise<RecentScore[]> {
+  const { rows } = await sql<RecentScore>`
+    SELECT
+      id, screen_name, score, duration_seconds,
+      (score::float / NULLIF(duration_seconds, 0)) AS rate,
+      created_at
+    FROM scores
+    WHERE event_slug = ${eventSlug}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `;
+  return rows;
+}
+
+export async function deleteScore(scoreId: string): Promise<void> {
+  await sql`DELETE FROM scores WHERE id = ${scoreId}`;
+}
+
+export async function getFailedHubspotPlayers(
+  eventSlug: string,
+): Promise<Player[]> {
+  const { rows } = await sql<Player>`
+    SELECT * FROM players
+    WHERE event_slug = ${eventSlug} AND hubspot_submitted = FALSE
+    ORDER BY created_at ASC
+  `;
+  return rows;
+}
