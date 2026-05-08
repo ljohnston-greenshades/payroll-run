@@ -12,6 +12,8 @@ export interface Player {
   hubspot_submitted: boolean;
   created_at: Date;
   session_token: string;
+  current_game_started_at: Date | null;
+  last_score_submitted_at: Date | null;
 }
 
 export interface Score {
@@ -128,4 +130,53 @@ export async function getPlayerCount(eventSlug: string): Promise<number> {
     WHERE event_slug = ${eventSlug}
   `;
   return Number(rows[0]?.count ?? 0);
+}
+
+export async function recordGameStart(playerId: string): Promise<void> {
+  await sql`
+    UPDATE players SET current_game_started_at = NOW() WHERE id = ${playerId}
+  `;
+}
+
+export async function recordScoreSubmitted(playerId: string): Promise<void> {
+  await sql`
+    UPDATE players
+    SET last_score_submitted_at = NOW(),
+        current_game_started_at = NULL
+    WHERE id = ${playerId}
+  `;
+}
+
+export async function getPersonalBest(
+  playerId: string,
+  eventSlug: string,
+): Promise<number> {
+  const { rows } = await sql<{ best: number | null }>`
+    SELECT MAX(score) AS best
+    FROM scores
+    WHERE player_id = ${playerId} AND event_slug = ${eventSlug}
+  `;
+  return rows[0]?.best ?? 0;
+}
+
+// Position is the player's rank when their personal best is compared
+// against everyone else's personal best in the event. 1 = top of board.
+export async function getLeaderboardPosition(
+  eventSlug: string,
+  score: number,
+): Promise<{ position: number; total: number }> {
+  const { rows } = await sql<{ ahead: string; total: string }>`
+    WITH player_bests AS (
+      SELECT screen_name, MAX(score) AS best
+      FROM scores
+      WHERE event_slug = ${eventSlug}
+      GROUP BY screen_name
+    )
+    SELECT
+      (SELECT COUNT(*)::text FROM player_bests WHERE best > ${score}) AS ahead,
+      (SELECT COUNT(*)::text FROM player_bests) AS total
+  `;
+  const ahead = Number(rows[0]?.ahead ?? 0);
+  const total = Number(rows[0]?.total ?? 0);
+  return { position: ahead + 1, total };
 }
