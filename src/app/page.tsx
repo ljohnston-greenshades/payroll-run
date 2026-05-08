@@ -1,8 +1,25 @@
+import { RegistrationForm } from "@/components/RegistrationForm";
+
 export default function HomePage() {
+  const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "the booth";
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 text-center">
-      <h1 className="font-pixel text-3xl text-gsGreen mb-4">PAYROLL RUN</h1>
-      <p className="text-lg opacity-80">Registration gate — coming in Phase 3.</p>
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-6">
+      <div aria-hidden className="pointer-events-none absolute inset-0 flex items-end justify-center opacity-20">
+        <div className="flamingo-bounce text-[12rem] leading-none">🦩</div>
+      </div>
+
+      <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
+        <p className="mb-2 font-serif text-sm uppercase tracking-[0.3em] text-gsGreen">
+          Greenshades · {eventName}
+        </p>
+        <h1 className="font-pixel text-3xl text-gsGreen sm:text-4xl">PAYROLL RUN</h1>
+        <p className="mt-3 mb-8 font-serif text-lg text-white/85">
+          How long can you keep payroll running?
+        </p>
+
+        <RegistrationForm />
+      </div>
     </main>
   );
 }
