@@ -1,7 +1,17 @@
-export const W = 800;
-export const H = 400;
+// W, H, GROUND_Y are mutable via setDimensions so the canvas can swap
+// between landscape (800x400, default) and mobile portrait (450x800)
+// at runtime. ESM live bindings ensure consumers see the updated
+// values; the GameCanvas component calls setDimensions before
+// constructing the Game.
+export let W = 800;
+export let H = 400;
+export let GROUND_Y = H - 60;
 
-export const GROUND_Y = H - 60;
+export function setDimensions(width: number, height: number): void {
+  W = width;
+  H = height;
+  GROUND_Y = height - 60;
+}
 export const GRAVITY = 0.55;
 export const JUMP_FORCE = -14;
 export const DUCK_H = 32;

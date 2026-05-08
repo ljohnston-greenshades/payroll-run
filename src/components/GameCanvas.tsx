@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Game, type GameOverInfo } from "@/game/engine";
+import { setDimensions } from "@/game/constants";
 import { GameOverOverlay, type ScoreResult } from "./GameOverOverlay";
 
 function readSoundParam(): boolean {
@@ -10,6 +11,11 @@ function readSoundParam(): boolean {
   // phone players in a quiet setting). ?sound=on is still accepted for
   // explicitness but is now redundant.
   return new URLSearchParams(window.location.search).get("sound") !== "off";
+}
+
+function isPortraitViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerHeight > window.innerWidth && window.innerWidth < 900;
 }
 
 export function GameCanvas() {
@@ -23,6 +29,14 @@ export function GameCanvas() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // 9:16 portrait fills mobile screens; 2:1 landscape stays the
+    // default for tablets / desktops / booth tablets in landscape.
+    if (isPortraitViewport()) {
+      setDimensions(450, 800);
+    } else {
+      setDimensions(800, 400);
+    }
 
     const initialSoundOn = readSoundParam();
     setSoundOn(initialSoundOn);
@@ -76,7 +90,7 @@ export function GameCanvas() {
   };
 
   return (
-    <div className="relative mx-auto aspect-[2/1] w-full max-w-[800px]">
+    <div className="relative mx-auto aspect-[9/16] w-full max-w-md md:aspect-[2/1] md:max-w-[800px]">
       <canvas
         ref={canvasRef}
         className="block h-full w-full rounded-lg shadow-2xl outline-none touch-none"

@@ -219,6 +219,7 @@ export class Game {
     this.lastObstacleX = -Infinity;
     this.highestRankIndex = 0;
     this.startedAt = performance.now();
+    this.player.x = Math.round(W * 0.15);
     this.player.y = GROUND_Y;
     this.player.vy = 0;
     this.player.grounded = true;
@@ -442,24 +443,28 @@ export class Game {
   }
 
   // Multi-box hitboxes that exactly match the sprite rectangles drawn
-  // in src/game/sprites.ts. Coordinates are derived directly from the
-  // drawFlamingo / drawObstacle calls (s = pixel scale = 2). Multiple
-  // tight boxes per entity instead of one loose box means collision
-  // mirrors the visible silhouette: if it looks like you clipped it,
-  // you clipped it.
+  // in src/game/sprites.ts. Coordinates derived directly from the
+  // drawFlamingo / drawObstacle calls (s = pixel scale = 2). Each
+  // visual sub-shape gets its own box so collision mirrors the
+  // silhouette: if any visible part touches the obstacle, you die.
   private playerHitboxes(): Box[] {
     const px = this.player.x;
     const py = this.player.y;
     if (this.player.ducking) {
       return [
-        { x: px - 4, y: py - 12, w: 40, h: 16 }, // body
-        { x: px + 36, y: py - 16, w: 20, h: 12 }, // head + beak
+        { x: px - 12, y: py - 16, w: 12, h: 12 }, // tail tip
+        { x: px - 4, y: py - 16, w: 40, h: 24 },  // body (top edge → bottom edge)
+        { x: px + 36, y: py - 20, w: 12, h: 16 }, // head
+        { x: px + 48, y: py - 16, w: 8, h: 10 },  // beak
       ];
     }
     return [
       { x: px + 16, y: py - 60, w: 20, h: 18 }, // head
-      { x: px + 18, y: py - 48, w: 8, h: 24 }, // neck
-      { x: px - 2, y: py - 24, w: 42, h: 28 }, // body + wing/tail
+      { x: px + 36, y: py - 54, w: 12, h: 10 }, // beak
+      { x: px + 17, y: py - 48, w: 12, h: 24 }, // neck (incl ±1 sway)
+      { x: px + 8, y: py - 28, w: 24, h: 4 },   // body top curve
+      { x: px, y: py - 24, w: 40, h: 28 },      // body main mass
+      { x: px - 8, y: py - 16, w: 16, h: 12 },  // tail/wing
     ];
   }
 
@@ -482,10 +487,15 @@ export class Game {
       };
     }
     if (obs.type === "deadline") {
-      // Clock is a true circle. Use circle-vs-box collision.
+      // Clock body is a circle; wings flap out the sides as separate
+      // small rectangles. Both must register as hits.
       const bob = Math.sin(this.frame * 0.1 + obs.x) * 4;
+      const wing = Math.sin(this.frame * 0.3) * 3;
       return {
-        boxes: [],
+        boxes: [
+          { x: x - 4, y: y + bob + 4 + wing, w: 12, h: 6 }, // left wing
+          { x: x + 32, y: y + bob + 4 - wing, w: 12, h: 6 }, // right wing
+        ],
         circle: { cx: x + 20, cy: y + 12 + bob, r: 20 },
       };
     }
