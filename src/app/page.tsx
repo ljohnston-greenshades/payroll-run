@@ -6,7 +6,7 @@ export default function HomePage() {
   const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "the booth";
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center overflow-hidden px-6 py-8">
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-10 md:py-14">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
@@ -15,13 +15,6 @@ export default function HomePage() {
             "radial-gradient(ellipse 60% 50% at 30% 35%, rgba(133,196,65,0.08), transparent 70%)",
         }}
       />
-
-      <header className="mb-8 flex flex-col items-center md:mb-10">
-        <GreenshadesLogo className="h-7 w-auto md:h-8" />
-        <p className="mt-2 font-serif text-[0.65rem] uppercase tracking-[0.3em] text-white/60">
-          {eventName}
-        </p>
-      </header>
 
       <section className="flex w-full max-w-5xl flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-14 lg:gap-20">
         <div className="relative shrink-0">
@@ -46,6 +39,13 @@ export default function HomePage() {
         </div>
 
         <div className="flex w-full max-w-md flex-col text-center md:text-left">
+          <div className="mb-5 flex flex-col items-center md:items-start">
+            <GreenshadesLogo className="h-5 w-auto md:h-6" />
+            <p className="mt-2 font-serif text-[0.6rem] uppercase tracking-[0.3em] text-white/55">
+              {eventName}
+            </p>
+          </div>
+
           <h1 className="whitespace-nowrap font-pixel text-3xl leading-none text-gsGreen sm:text-4xl md:text-5xl">
             PAYROLL RUN
           </h1>
@@ -53,6 +53,7 @@ export default function HomePage() {
           <p className="mb-6 mt-4 font-serif text-base text-white/85 md:text-lg">
             How long can you keep payroll running?
           </p>
+
           <RegistrationForm />
         </div>
       </section>
