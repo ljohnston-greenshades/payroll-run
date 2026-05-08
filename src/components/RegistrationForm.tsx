@@ -143,12 +143,12 @@ export function RegistrationForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-md bg-gsGreen px-6 py-3 font-pixel text-sm uppercase tracking-wider text-gsNavy transition hover:brightness-110 disabled:opacity-60"
+        className="mt-1 w-full rounded-md bg-gsGreen px-6 py-3 font-pixel text-sm uppercase tracking-wider text-gsNavy shadow-lg shadow-gsGreen/20 transition hover:brightness-110 hover:shadow-gsGreen/40 active:translate-y-px disabled:opacity-60"
       >
         {isSubmitting ? "Starting…" : "Start running →"}
       </button>
 
-      <p className="text-xs text-white/60">
+      <p className="text-xs text-white/55">
         By playing, you agree to receive info from Greenshades about our payroll
         and HR solutions. We&apos;ll never share your data with third parties.
       </p>
@@ -182,8 +182,11 @@ function Field({
   hint,
 }: FieldProps) {
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm font-semibold text-white/90">
+    <div className="space-y-1.5">
+      <label
+        htmlFor={id}
+        className="block text-xs font-semibold uppercase tracking-wider text-white/70"
+      >
         {label}
         {required ? <span className="ml-1 text-gsGreen">*</span> : null}
       </label>
@@ -198,14 +201,14 @@ function Field({
         maxLength={maxLength}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
-        className="w-full rounded-md border border-white/20 bg-white/5 px-3 py-2 text-white placeholder-white/40 outline-none focus:border-gsGreen"
+        className="w-full rounded-md border border-white/15 bg-white/[0.04] px-3 py-2.5 text-white placeholder-white/40 outline-none transition focus:border-gsGreen focus:bg-white/[0.06] focus:ring-2 focus:ring-gsGreen/25"
       />
       {error ? (
         <p id={`${id}-error`} className="text-xs text-red-300">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="text-xs text-white/50">
+        <p id={`${id}-hint`} className="text-xs text-white/45">
           {hint}
         </p>
       ) : null}

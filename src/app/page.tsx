@@ -6,43 +6,56 @@ export default function HomePage() {
   const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "the booth";
 
   return (
-    <main className="flex min-h-screen flex-col items-center px-6 py-8">
-      <div className="flex w-full max-w-4xl flex-col items-center">
-        <GreenshadesLogo className="mb-2 h-6 w-auto" />
-        <p className="mb-8 font-serif text-[0.65rem] uppercase tracking-[0.3em] text-white/60">
+    <main className="relative flex min-h-screen flex-col items-center overflow-hidden px-6 py-8">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 50% at 30% 35%, rgba(133,196,65,0.08), transparent 70%)",
+        }}
+      />
+
+      <header className="mb-8 flex flex-col items-center md:mb-10">
+        <GreenshadesLogo className="h-7 w-auto md:h-8" />
+        <p className="mt-2 font-serif text-[0.65rem] uppercase tracking-[0.3em] text-white/60">
           {eventName}
         </p>
+      </header>
 
-        <div className="flex w-full flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
-          <div className="flex flex-col items-center md:items-start">
-            <Image
-              src="/flo.png"
-              alt="Flo the flamingo"
-              width={260}
-              height={336}
-              unoptimized
-              priority
-              className="flo-bounce drop-shadow-[0_10px_24px_rgba(0,0,0,0.6)]"
-              style={{ imageRendering: "pixelated" }}
-            />
-            <p className="mt-3 hidden font-pixel text-[0.6rem] uppercase tracking-widest text-gsGreen md:block">
-              Meet Flo
-            </p>
-          </div>
-
-          <div className="flex w-full max-w-md flex-col items-center text-center md:items-start md:text-left">
-            <h1 className="font-pixel text-3xl leading-tight text-gsGreen sm:text-4xl">
-              PAYROLL
-              <br />
-              RUN
-            </h1>
-            <p className="mb-5 mt-2 font-serif text-base text-white/85">
-              How long can you keep payroll running?
-            </p>
-            <RegistrationForm />
-          </div>
+      <section className="flex w-full max-w-5xl flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-14 lg:gap-20">
+        <div className="relative shrink-0">
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 translate-y-6 blur-2xl"
+            style={{
+              background:
+                "radial-gradient(ellipse 60% 80% at 50% 60%, rgba(255,107,157,0.25), transparent 70%)",
+            }}
+          />
+          <Image
+            src="/flo.png"
+            alt="Flo the flamingo"
+            width={300}
+            height={388}
+            unoptimized
+            priority
+            className="flo-bounce drop-shadow-[0_14px_28px_rgba(0,0,0,0.55)]"
+            style={{ imageRendering: "pixelated" }}
+          />
         </div>
-      </div>
+
+        <div className="flex w-full max-w-md flex-col text-center md:text-left">
+          <h1 className="whitespace-nowrap font-pixel text-3xl leading-none text-gsGreen sm:text-4xl md:text-5xl">
+            PAYROLL RUN
+          </h1>
+          <div className="mx-auto mt-4 h-[3px] w-20 bg-gsGreen md:mx-0" />
+          <p className="mb-6 mt-4 font-serif text-base text-white/85 md:text-lg">
+            How long can you keep payroll running?
+          </p>
+          <RegistrationForm />
+        </div>
+      </section>
     </main>
   );
 }
