@@ -153,8 +153,6 @@ export function drawObstacle(
     drawRect(ctx, x + 8 * s, y, 4 * s, 14 * s, "#888");
     drawRect(ctx, x - 2 * s, y - 12 * s, 24 * s, 16 * s, "#cc2222");
     drawRect(ctx, x, y - 10 * s, 20 * s, 12 * s, "#ee3333");
-    drawRect(ctx, x + 8 * s, y - 9 * s, 4 * s, 6 * s, Colors.white);
-    drawRect(ctx, x + 8 * s, y - 2 * s, 4 * s, 2 * s, Colors.white);
     drawPixelText(ctx, "IRS", x + 10 * s, y - 4 * s, 11, Colors.white, "center");
     return;
   }
