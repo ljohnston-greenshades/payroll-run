@@ -6,9 +6,17 @@ beyond our own API and HubSpot.
 
 ## Required
 
-- `PressStart2P.woff2` — used for the retro pixel-art game title and HUD.
+- `PressStart2P.woff2` — retro pixel-art title + HUD
+- `PTSerif-Regular.woff2` — branding headings
+- `PTSerif-Bold.woff2` — bold variant of the above
+- `SourceSans3-Regular.woff2` — body copy
 
-The Press Start 2P font is licensed under the SIL Open Font License (OFL) and
-can be downloaded from its source repository. After obtaining the file, place
-it here as `PressStart2P.woff2`. The `@font-face` declaration in
-`src/app/globals.css` already references this path.
+All four are licensed under the SIL Open Font License (OFL). Download the
+woff2 files from each font's source repository (Google Fonts has a one-click
+"Download family" button that produces ttf — convert to woff2 with
+`fonttools` or grab pre-built woff2 from the upstream repos). Drop them in
+this directory under the names above. The `@font-face` declarations in
+`src/app/globals.css` already reference these paths.
+
+If the files are missing, the app falls back to the OS default `monospace`,
+`serif`, and `sans-serif` stacks — functional but visually off-brand.
