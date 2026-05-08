@@ -35,7 +35,7 @@ export async function submitToHubSpot(input: HubSpotRegistration): Promise<boole
       { name: "lastname", value: input.lastName },
       { name: "email", value: input.email },
       { name: "company", value: input.company },
-      { name: "lead_acquisition_channel", value: "event" },
+      { name: "lead_acquisition_channel", value: "Event" },
       { name: "utm_medium", value: UTM_MEDIUM },
       { name: "utm_source", value: input.eventSlug },
       { name: "utm_campaign", value: UTM_CAMPAIGN },
