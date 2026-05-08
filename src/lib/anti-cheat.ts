@@ -1,7 +1,10 @@
 // Layered defenses from CLAUDE.md §7. Each rule has a clear name so
 // rejected submissions can be filed under a specific reason in logs.
 
-export const SCORE_PER_SECOND_MAX = 350;
+// 1000/s gives plenty of headroom for combo-stacked W-2s ($2500 at 10x
+// combo) without rejecting legitimate skilled runs. Obvious fabrication
+// (50k in <50s) is still caught by the score ceiling + duration floor.
+export const SCORE_PER_SECOND_MAX = 1000;
 export const MIN_DURATION_SECONDS = 5;
 export const MAX_SCORE = 50000;
 export const RATE_LIMIT_SECONDS = 5;
