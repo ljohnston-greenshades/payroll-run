@@ -5,8 +5,11 @@
 // combo) without rejecting legitimate skilled runs. Obvious fabrication
 // (50k in <50s) is still caught by the score ceiling + duration floor.
 export const SCORE_PER_SECOND_MAX = 1000;
-export const MIN_DURATION_SECONDS = 5;
-export const MAX_SCORE = 50000;
+// Anti-cheat workhorse is SCORE_PER_SECOND_MAX above. The ceiling and
+// floor are belt-and-suspenders — catch absurd submissions (six-figure
+// scores or 0-second runs) without rejecting real gameplay.
+export const MIN_DURATION_SECONDS = 3;
+export const MAX_SCORE = 99_999;
 export const RATE_LIMIT_SECONDS = 5;
 export const WALL_CLOCK_TOLERANCE_SECONDS = 5;
 
