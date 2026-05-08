@@ -82,25 +82,27 @@ export function RegistrationForm() {
   const fieldError = (key: keyof FormState) => errors[key];
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-md space-y-4 text-left" noValidate>
-      <Field
-        id="firstName"
-        label="First name"
-        value={form.firstName}
-        onChange={update("firstName")}
-        error={fieldError("firstName")}
-        autoComplete="given-name"
-        required
-      />
-      <Field
-        id="lastName"
-        label="Last name"
-        value={form.lastName}
-        onChange={update("lastName")}
-        error={fieldError("lastName")}
-        autoComplete="family-name"
-        required
-      />
+    <form onSubmit={onSubmit} className="w-full max-w-md space-y-3 text-left" noValidate>
+      <div className="grid grid-cols-2 gap-3">
+        <Field
+          id="firstName"
+          label="First name"
+          value={form.firstName}
+          onChange={update("firstName")}
+          error={fieldError("firstName")}
+          autoComplete="given-name"
+          required
+        />
+        <Field
+          id="lastName"
+          label="Last name"
+          value={form.lastName}
+          onChange={update("lastName")}
+          error={fieldError("lastName")}
+          autoComplete="family-name"
+          required
+        />
+      </div>
       <Field
         id="email"
         type="email"
@@ -111,24 +113,26 @@ export function RegistrationForm() {
         autoComplete="email"
         required
       />
-      <Field
-        id="company"
-        label="Company"
-        value={form.company}
-        onChange={onCompanyChange}
-        error={fieldError("company")}
-        autoComplete="organization"
-        required
-      />
-      <Field
-        id="screenName"
-        label="Screen name"
-        value={form.screenName}
-        onChange={update("screenName")}
-        error={fieldError("screenName")}
-        maxLength={12}
-        hint="Shown on the leaderboard. Defaults to your first name."
-      />
+      <div className="grid grid-cols-2 gap-3">
+        <Field
+          id="company"
+          label="Company"
+          value={form.company}
+          onChange={onCompanyChange}
+          error={fieldError("company")}
+          autoComplete="organization"
+          required
+        />
+        <Field
+          id="screenName"
+          label="Screen name"
+          value={form.screenName}
+          onChange={update("screenName")}
+          error={fieldError("screenName")}
+          maxLength={12}
+          hint="Shown on leaderboard"
+        />
+      </div>
 
       {generalError ? (
         <p className="text-sm text-red-300" role="alert">
