@@ -4,6 +4,7 @@ import {
   drawPalmTree,
   drawPixelText,
   drawRect,
+  getGsLogo,
 } from "./sprites";
 import type { BgBuilding, Cloud, PalmTree } from "./types";
 
@@ -137,57 +138,231 @@ export function drawTitleOverlay(
   ctx: CanvasRenderingContext2D,
   frame: number,
 ): void {
-  ctx.fillStyle = "rgba(6,42,71,0.7)";
+  // Darker overlay so the legend reads cleanly over the moving scene.
+  ctx.fillStyle = "rgba(6,42,71,0.88)";
   ctx.fillRect(0, 0, W, H);
-  drawPixelText(ctx, "PAYROLL RUN", W / 2, H * 0.28, 28, Colors.green, "center");
-  drawPixelText(ctx, "PAYROLL RUN", W / 2 - 1, H * 0.28 - 1, 28, Colors.sage, "center");
+
+  const isPortrait = H > W;
+
+  // Title block
+  const titleY = isPortrait ? H * 0.1 : H * 0.18;
+  const titleSize = isPortrait ? 26 : 28;
+  drawPixelText(ctx, "PAYROLL RUN", W / 2, titleY, titleSize, Colors.green, "center");
+  drawPixelText(
+    ctx,
+    "PAYROLL RUN",
+    W / 2 - 1,
+    titleY - 1,
+    titleSize,
+    Colors.sage,
+    "center",
+  );
+  const subtitleY = isPortrait ? H * 0.16 : H * 0.27;
   drawPixelText(
     ctx,
     "A Greenshades Adventure",
     W / 2,
-    H * 0.38,
-    10,
+    subtitleY,
+    9,
     Colors.warmGray,
     "center",
   );
+
+  // Flamingo mascot
+  const flamingoX = W / 2 - 20;
+  const flamingoY = isPortrait ? H * 0.34 : H * 0.5;
   drawFlamingo(
     ctx,
-    W / 2 - 20,
-    H * 0.62,
+    flamingoX,
+    flamingoY,
     false,
     frame,
     Math.sin(frame * 0.05) > 0.7 ? 1 : 0,
     frame,
   );
+
+  // Legend
+  drawLegend(ctx, frame, isPortrait);
+
+  // Press start (blink)
   if (Math.sin(frame * 0.06) > 0) {
     drawPixelText(
       ctx,
       "PRESS SPACE OR TAP TO START",
       W / 2,
-      H * 0.78,
-      9,
+      H * 0.95,
+      isPortrait ? 8 : 9,
       Colors.white,
       "center",
     );
   }
-  drawPixelText(
-    ctx,
-    "COLLECT: PAYCHECKS  W-2s  GS SHIELDS",
-    W / 2,
-    H * 0.87,
-    7,
-    Colors.sage,
-    "center",
-  );
-  drawPixelText(
-    ctx,
-    "DODGE: IRS  DEADLINES  GARNISHMENTS",
-    W / 2,
-    H * 0.93,
-    7,
-    Colors.coral,
-    "center",
-  );
+}
+
+function drawLegend(
+  ctx: CanvasRenderingContext2D,
+  frame: number,
+  isPortrait: boolean,
+): void {
+  const headerY = isPortrait ? H * 0.45 : H * 0.62;
+  const collectX = isPortrait ? W * 0.28 : W * 0.27;
+  const dodgeX = isPortrait ? W * 0.72 : W * 0.73;
+
+  drawPixelText(ctx, "COLLECT", collectX, headerY, 8, Colors.green, "center");
+  drawPixelText(ctx, "DODGE", dodgeX, headerY, 8, Colors.coral, "center");
+
+  const rowSpacing = isPortrait ? 38 : 30;
+  const startRowY = headerY + (isPortrait ? 26 : 22);
+
+  const collectItems: Array<[LegendIconType, string]> = [
+    ["paycheck", "PAYCHECK"],
+    ["w2", "W-2"],
+    ["shield", "GS SHIELD"],
+  ];
+  const dodgeItems: Array<[LegendIconType, string]> = [
+    ["tax", "IRS"],
+    ["deadline", "DEADLINE"],
+    ["garnishment", "GARNISH"],
+  ];
+
+  for (let i = 0; i < 3; i++) {
+    const y = startRowY + i * rowSpacing;
+    drawLegendRow(ctx, frame, collectItems[i][0], collectItems[i][1], collectX, y);
+    drawLegendRow(ctx, frame, dodgeItems[i][0], dodgeItems[i][1], dodgeX, y);
+  }
+}
+
+function drawLegendRow(
+  ctx: CanvasRenderingContext2D,
+  frame: number,
+  type: LegendIconType,
+  label: string,
+  centerX: number,
+  centerY: number,
+): void {
+  // Icon to the left of the label, both vertically centered on `centerY`.
+  const iconCenterX = centerX - 30;
+  drawLegendIcon(ctx, type, frame, iconCenterX, centerY);
+  drawPixelText(ctx, label, centerX - 18, centerY + 1, 7, Colors.white, "left");
+}
+
+type LegendIconType =
+  | "paycheck"
+  | "w2"
+  | "shield"
+  | "tax"
+  | "deadline"
+  | "garnishment";
+
+// Mini icons drawn at ~18-22px tall, centered at (cx, cy).
+// Visually echoes the in-game sprites without re-running their full
+// animated draw paths (which expect game-world coordinates).
+function drawLegendIcon(
+  ctx: CanvasRenderingContext2D,
+  type: LegendIconType,
+  frame: number,
+  cx: number,
+  cy: number,
+): void {
+  if (type === "paycheck") {
+    drawRect(ctx, cx - 10, cy - 7, 20, 14, Colors.sage);
+    drawRect(ctx, cx - 9, cy - 6, 18, 12, Colors.green);
+    drawPixelText(ctx, "$", cx, cy + 1, 11, Colors.white, "center");
+    return;
+  }
+  if (type === "w2") {
+    drawRect(ctx, cx - 8, cy - 10, 16, 20, Colors.white);
+    drawRect(ctx, cx - 8, cy - 10, 16, 5, Colors.navy);
+    drawPixelText(ctx, "W-2", cx, cy - 7, 6, Colors.white, "center");
+    drawRect(ctx, cx - 6, cy - 2, 12, 1, "#bbb");
+    drawRect(ctx, cx - 6, cy + 1, 12, 1, "#bbb");
+    drawRect(ctx, cx - 6, cy + 4, 12, 1, "#bbb");
+    return;
+  }
+  if (type === "shield") {
+    const logo = getGsLogo();
+    if (logo) {
+      const targetH = 18;
+      const aspect = logo.width / logo.height;
+      const w = targetH * aspect;
+      ctx.drawImage(logo, cx - w / 2, cy - targetH / 2, w, targetH);
+      return;
+    }
+    // Fallback shield while the asset loads
+    ctx.fillStyle = Colors.deepGreen;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 9);
+    ctx.lineTo(cx + 8, cy - 5);
+    ctx.lineTo(cx + 8, cy + 4);
+    ctx.lineTo(cx, cy + 10);
+    ctx.lineTo(cx - 8, cy + 4);
+    ctx.lineTo(cx - 8, cy - 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = Colors.green;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 7);
+    ctx.lineTo(cx + 6, cy - 4);
+    ctx.lineTo(cx + 6, cy + 3);
+    ctx.lineTo(cx, cy + 8);
+    ctx.lineTo(cx - 6, cy + 3);
+    ctx.lineTo(cx - 6, cy - 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = Colors.white;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx - 3, cy);
+    ctx.lineTo(cx - 1, cy + 2);
+    ctx.lineTo(cx + 3, cy - 3);
+    ctx.stroke();
+    return;
+  }
+  if (type === "tax") {
+    drawRect(ctx, cx - 11, cy - 8, 22, 16, "#cc2222");
+    drawRect(ctx, cx - 10, cy - 7, 20, 14, "#ee3333");
+    drawPixelText(ctx, "IRS", cx, cy + 1, 9, Colors.white, "center");
+    return;
+  }
+  if (type === "deadline") {
+    const wing = Math.sin(frame * 0.3) * 2;
+    drawRect(ctx, cx - 13, cy - 1 + wing, 5, 3, "#cc9900");
+    drawRect(ctx, cx + 8, cy - 1 - wing, 5, 3, "#cc9900");
+    ctx.fillStyle = Colors.yellow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#cc9900";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = Colors.white;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = Colors.charcoal;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + 3, cy - 2);
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy + 4);
+    ctx.stroke();
+    return;
+  }
+  // garnishment
+  drawRect(ctx, cx - 9, cy - 9, 18, 18, "#f5e6c8");
+  drawRect(ctx, cx - 8, cy - 8, 16, 16, "#fbf3df");
+  drawRect(ctx, cx - 9, cy - 9, 18, 5, "#cc2222");
+  drawPixelText(ctx, "G", cx, cy - 7, 5, Colors.white, "center");
+  drawRect(ctx, cx - 7, cy - 2, 14, 1, "#666");
+  drawRect(ctx, cx - 7, cy + 1, 14, 1, "#666");
+  drawRect(ctx, cx - 7, cy + 4, 14, 1, "#666");
+  ctx.fillStyle = "#cc2222";
+  ctx.beginPath();
+  ctx.arc(cx + 5, cy + 6, 2.2, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 export function drawGameOverOverlay(
