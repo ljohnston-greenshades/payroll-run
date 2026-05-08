@@ -62,6 +62,10 @@ import type {
 
 export interface GameOptions {
   onGameOver?: (info: GameOverInfo) => void;
+  // Fires whenever a fresh playthrough begins — both from title screen
+  // and after a retry. Used to ping /api/game-start so server-side
+  // anti-cheat can compare wall-clock elapsed against reported duration.
+  onPlayStart?: () => void;
 }
 
 const OBSTACLE_TYPES: ObstacleType[] = ["tax", "deadline", "compliance"];
@@ -145,6 +149,19 @@ export class Game {
     this.input.detach();
   }
 
+  // Public restart trigger for DOM "Try Again" buttons. No-op while a
+  // game is already in progress so a misclick doesn't reset a live run.
+  restart(): void {
+    if (this.state === "playing") return;
+    this.beginPlaythrough();
+  }
+
+  private beginPlaythrough(): void {
+    this.state = "playing";
+    this.resetRun();
+    this.options.onPlayStart?.();
+  }
+
   private initBackground(): void {
     this.clouds = [];
     for (let i = 0; i < 6; i++) {
@@ -217,16 +234,14 @@ export class Game {
         if (c.x < -80) c.x = W + 40;
       }
       if (this.input.consumeJump()) {
-        this.state = "playing";
-        this.resetRun();
+        this.beginPlaythrough();
       }
       return;
     }
 
     if (this.state === "gameover") {
       if (this.input.consumeJump()) {
-        this.state = "playing";
-        this.resetRun();
+        this.beginPlaythrough();
       }
       this.particles = updateParticles(this.particles);
       this.floatingTexts = updateFloatingTexts(this.floatingTexts);
