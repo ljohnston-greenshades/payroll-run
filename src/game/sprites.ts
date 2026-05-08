@@ -138,7 +138,7 @@ export function drawObstacle(
     drawRect(ctx, x, y - 10 * s, 20 * s, 12 * s, "#ee3333");
     drawRect(ctx, x + 8 * s, y - 9 * s, 4 * s, 6 * s, Colors.white);
     drawRect(ctx, x + 8 * s, y - 2 * s, 4 * s, 2 * s, Colors.white);
-    drawPixelText(ctx, "TAX", x + 10 * s, y + 8 * s, 7, Colors.white, "center");
+    drawPixelText(ctx, "IRS", x + 10 * s, y + 8 * s, 7, Colors.white, "center");
     return;
   }
   if (obs.type === "deadline") {
@@ -171,16 +171,32 @@ export function drawObstacle(
     drawRect(ctx, x + 16 * s, cy + 2 * s - wing, 6 * s, 3 * s, "#cc9900");
     return;
   }
-  // compliance
+  // garnishment — court order document with red header + seal
+  // Drop shadow (offset right + down)
+  drawRect(ctx, x + 1, y + 1, 24 * s, 18 * s, "#000");
+  // Paper background
+  drawRect(ctx, x, y, 24 * s, 18 * s, "#f5e6c8");
+  drawRect(ctx, x + 1 * s, y + 1 * s, 22 * s, 16 * s, "#fbf3df");
+  // Red header banner with "GARNISH" text
+  drawRect(ctx, x, y, 24 * s, 4 * s, "#cc2222");
+  drawRect(ctx, x + 1 * s, y, 22 * s, 3 * s, "#ee3333");
+  drawPixelText(ctx, "GARNISH", x + 12 * s, y + 2 * s, 5, Colors.white, "center");
+  // Body text lines
   for (let i = 0; i < 3; i++) {
-    drawRect(ctx, x - 2 * s, y + i * 6 * s - 4 * s, 24 * s, 5 * s, "#cc4444");
-    drawRect(ctx, x, y + i * 6 * s - 3 * s, 20 * s, 3 * s, "#ee6666");
-    drawRect(ctx, x + 2 * s, y + i * 6 * s - 2 * s, 16 * s, 1 * s, "#ffaaaa");
+    drawRect(ctx, x + 3 * s, y + 6 * s + i * 2 * s, 18 * s, 1 * s, "#666");
   }
-  drawRect(ctx, x + 6 * s, y - 10 * s, 8 * s, 7 * s, Colors.white);
-  drawRect(ctx, x + 7 * s, y - 8 * s, 2 * s, 2 * s, Colors.charcoal);
-  drawRect(ctx, x + 11 * s, y - 8 * s, 2 * s, 2 * s, Colors.charcoal);
-  drawRect(ctx, x + 8 * s, y - 5 * s, 4 * s, 1 * s, Colors.charcoal);
+  // Court seal (red circle with check)
+  ctx.fillStyle = "#cc2222";
+  ctx.beginPath();
+  ctx.arc(x + 18 * s, y + 14 * s, 3 * s, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ee3333";
+  ctx.beginPath();
+  ctx.arc(x + 18 * s, y + 14 * s, 2.2 * s, 0, Math.PI * 2);
+  ctx.fill();
+  drawPixelText(ctx, "$", x + 18 * s, y + 14 * s, 5, Colors.white, "center");
+  // Signature line
+  drawRect(ctx, x + 3 * s, y + 14 * s, 10 * s, 1 * s, "#444");
 }
 
 export function drawCollectible(
@@ -207,22 +223,49 @@ export function drawCollectible(
     }
     return;
   }
-  if (col.type === "bonus") {
+  if (col.type === "shield") {
+    // Greenshades compliance shield with checkmark — represents
+    // protection from payroll/tax disasters. 5s of invincibility.
     const cy = y + bob;
-    const rot = frame * 0.05;
-    ctx.fillStyle = Colors.yellow;
+    const cx = x + 8 * s;
+    const cyMid = cy + 8 * s;
+    // Glow
+    ctx.fillStyle = "rgba(133,196,65,0.22)";
     ctx.beginPath();
-    for (let i = 0; i < 5; i++) {
-      const a = rot + (i * Math.PI * 2) / 5 - Math.PI / 2;
-      const r = 12 * s;
-      const ir = 5 * s;
-      ctx.lineTo(x + 8 * s + Math.cos(a) * r, cy + 6 * s + Math.sin(a) * r);
-      const a2 = a + Math.PI / 5;
-      ctx.lineTo(x + 8 * s + Math.cos(a2) * ir, cy + 6 * s + Math.sin(a2) * ir);
-    }
+    ctx.arc(cx, cyMid, 14 * s, 0, Math.PI * 2);
+    ctx.fill();
+    // Shield outline (dark green border)
+    ctx.fillStyle = Colors.deepGreen;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 1 * s);
+    ctx.lineTo(cx + 9 * s, cy + 3 * s);
+    ctx.lineTo(cx + 9 * s, cy + 12 * s);
+    ctx.lineTo(cx, cy + 18 * s);
+    ctx.lineTo(cx - 9 * s, cy + 12 * s);
+    ctx.lineTo(cx - 9 * s, cy + 3 * s);
     ctx.closePath();
     ctx.fill();
-    drawPixelText(ctx, "2X", x + 8 * s, cy + 7 * s, 7, Colors.charcoal, "center");
+    // Inner shield (Greenshades green)
+    ctx.fillStyle = Colors.green;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 1 * s);
+    ctx.lineTo(cx + 7.5 * s, cy + 4.5 * s);
+    ctx.lineTo(cx + 7.5 * s, cy + 11 * s);
+    ctx.lineTo(cx, cy + 16 * s);
+    ctx.lineTo(cx - 7.5 * s, cy + 11 * s);
+    ctx.lineTo(cx - 7.5 * s, cy + 4.5 * s);
+    ctx.closePath();
+    ctx.fill();
+    // Checkmark
+    ctx.strokeStyle = Colors.white;
+    ctx.lineWidth = 3 * s;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx - 4 * s, cy + 8 * s);
+    ctx.lineTo(cx - 1 * s, cy + 11 * s);
+    ctx.lineTo(cx + 5 * s, cy + 5 * s);
+    ctx.stroke();
     return;
   }
   // w2

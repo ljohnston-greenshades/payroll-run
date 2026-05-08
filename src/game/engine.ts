@@ -71,13 +71,13 @@ export interface GameOptions {
   sound?: boolean;
 }
 
-const OBSTACLE_TYPES: ObstacleType[] = ["tax", "deadline", "compliance"];
+const OBSTACLE_TYPES: ObstacleType[] = ["tax", "deadline", "garnishment"];
 const OBSTACLE_WEIGHTS = [0.4, 0.35, 0.25];
 const COLLECTIBLE_BAG: CollectibleType[] = [
   "paycheck",
   "paycheck",
   "paycheck",
-  "bonus",
+  "shield",
   "w2",
 ];
 
@@ -372,10 +372,10 @@ export class Game {
         text = this.combo > 1 ? `$${points} x${this.combo}!` : `+$${points}`;
         spawnParticles(this.particles, col.x + 16, col.y + 12, Colors.green, 8);
         this.sound.paycheck(this.combo);
-      } else if (col.type === "bonus") {
+      } else if (col.type === "shield") {
         points = 500;
-        text = `BONUS $${points}!`;
-        spawnParticles(this.particles, col.x + 16, col.y + 12, Colors.yellow, 15);
+        text = `PROTECTED! +$${points}`;
+        spawnParticles(this.particles, col.x + 16, col.y + 12, Colors.green, 15);
         this.player.invincible = INVINCIBILITY_FRAMES;
         this.sound.bonus();
       } else {
@@ -391,7 +391,7 @@ export class Game {
         col.x,
         col.y - 10,
         text,
-        col.type === "bonus" ? Colors.yellow : Colors.green,
+        col.type === "shield" ? Colors.yellow : Colors.green,
       );
       this.checkPromotion();
       return false;
@@ -470,23 +470,22 @@ export class Game {
     }
     if (obs.type === "deadline") {
       // Clock is a circle at center (x+20, y+12+bob) with radius 20.
-      // Use the inscribed square so wings/handles don't trigger hits.
+      // Inscribed square (sqrt(2) * r ≈ 28) is centered on the circle.
       const bob = Math.sin(this.frame * 0.1 + obs.x) * 4;
       return {
         x: x + 6,
-        y: y - 4 + bob,
+        y: y - 2 + bob,
         w: 28,
         h: 28,
       };
     }
-    // compliance — three tape rows span y-8 to y+26; skull above is
-    // decorative and intentionally not part of the hitbox so a tight
-    // jump over the stack doesn't kill on the skull.
+    // garnishment — paper document spans y to y+36. Hitbox covers
+    // most of the paper, leaving a small graze zone on each edge.
     return {
-      x: x + 2,
-      y: y - 6,
+      x: x + 4,
+      y: y + 4,
       w: 40,
-      h: 30,
+      h: 28,
     };
   }
 
@@ -508,7 +507,7 @@ export class Game {
       h = 30;
       w = 44;
       y = GROUND_Y - 40 - Math.random() * 30;
-    } else if (type === "compliance") {
+    } else if (type === "garnishment") {
       h = 36;
       w = 48;
     } else {
@@ -570,10 +569,10 @@ export class Game {
     spawnParticles(this.particles, this.player.x + 20, this.player.y - 20, Colors.orange, 10);
     const msg =
       obsType === "tax"
-        ? "TAX PENALTY!"
+        ? "IRS AUDIT!"
         : obsType === "deadline"
         ? "MISSED DEADLINE!"
-        : "VIOLATION!";
+        : "WAGES GARNISHED!";
     spawnFloatingText(this.floatingTexts, this.player.x, this.player.y - 40, msg, Colors.red);
     this.sound.death();
     this.sound.stopMusic();
