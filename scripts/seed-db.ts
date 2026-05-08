@@ -1,7 +1,3 @@
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
-dotenv.config();
-
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { sql } from "@vercel/postgres";
