@@ -157,6 +157,7 @@ export class Game {
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
     this.rafId = null;
     this.input.detach();
+    this.sound.stopMusic();
   }
 
   // Public restart trigger for DOM "Try Again" buttons. No-op while a
@@ -169,6 +170,7 @@ export class Game {
   private beginPlaythrough(): void {
     this.state = "playing";
     this.resetRun();
+    this.sound.startMusic();
     this.options.onPlayStart?.();
   }
 
@@ -500,6 +502,7 @@ export class Game {
         : "VIOLATION!";
     spawnFloatingText(this.floatingTexts, this.player.x, this.player.y - 40, msg, Colors.red);
     this.sound.death();
+    this.sound.stopMusic();
 
     const durationSeconds = Math.max(
       1,
