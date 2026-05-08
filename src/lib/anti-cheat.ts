@@ -1,17 +1,12 @@
-// Layered defenses from CLAUDE.md §7. Each rule has a clear name so
-// rejected submissions can be filed under a specific reason in logs.
-
-// 1000/s gives plenty of headroom for combo-stacked W-2s ($2500 at 10x
-// combo) without rejecting legitimate skilled runs. Obvious fabrication
-// (50k in <50s) is still caught by the score ceiling + duration floor.
-export const SCORE_PER_SECOND_MAX = 1000;
-// Anti-cheat workhorse is SCORE_PER_SECOND_MAX above. The ceiling and
-// floor are belt-and-suspenders — catch absurd submissions (six-figure
-// scores or 0-second runs) without rejecting real gameplay.
-export const MIN_DURATION_SECONDS = 3;
-export const MAX_SCORE = 99_999;
-export const RATE_LIMIT_SECONDS = 5;
-export const WALL_CLOCK_TOLERANCE_SECONDS = 5;
+// Anti-cheat is intentionally loose for booth gameplay: the goal is
+// to catch obviously-fabricated submissions, not to penalize skilled
+// players or strange but plausible runs. We don't lose anything if a
+// few outlier scores slip through; the admin panel can clean them up.
+export const SCORE_PER_SECOND_MAX = 10_000;
+export const MIN_DURATION_SECONDS = 1;
+export const MAX_SCORE = 999_999;
+export const RATE_LIMIT_SECONDS = 2;
+export const WALL_CLOCK_TOLERANCE_SECONDS = 60;
 
 export interface ScoreSubmission {
   score: number;

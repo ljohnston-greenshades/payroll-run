@@ -332,11 +332,15 @@ export class Game {
       if (obs.x < -60) return false;
 
       if (this.player.invincible <= 0) {
+        // Deadline obstacle bobs visually; track that in collision so
+        // dodges feel honest instead of clipping the offset version.
+        const bob =
+          obs.type === "deadline" ? Math.sin(this.frame * 0.1 + obs.x) * 4 : 0;
         const obsBox: Box = {
-          x: obs.x + 4,
-          y: obs.y + 4,
-          w: obs.w - 8,
-          h: obs.h - 8,
+          x: obs.x + 8,
+          y: obs.y + 8 + bob,
+          w: obs.w - 16,
+          h: obs.h - 16,
         };
         if (boxOverlap(playerBox, obsBox)) {
           this.die(obs.type);
@@ -428,11 +432,13 @@ export class Game {
     const py = this.player.ducking
       ? this.player.y - DUCK_H
       : this.player.y - this.player.h;
+    // Tightened from prototype so visual near-clips don't kill — the
+    // sprite outline is generous around the hitbox.
     return {
-      x: this.player.x + 6,
-      y: py + 4,
-      w: this.player.w - 12,
-      h: ph - 8,
+      x: this.player.x + 10,
+      y: py + 8,
+      w: this.player.w - 20,
+      h: ph - 14,
     };
   }
 
@@ -477,15 +483,34 @@ export class Game {
   private spawnCollectible(): void {
     const type = COLLECTIBLE_BAG[Math.floor(Math.random() * COLLECTIBLE_BAG.length)];
     const yOptions = [GROUND_Y - 50, GROUND_Y - 80, GROUND_Y - 120];
-    const y = yOptions[Math.floor(Math.random() * yOptions.length)];
-    this.collectibles.push({
-      x: W + 50,
-      y,
-      w: 32,
-      h: 24,
-      type,
-      collected: false,
-    });
+
+    // Try positions until one doesn't overlap any obstacle within a
+    // safety margin. Falls through with no spawn if every option
+    // collides — better to drop a collectible than to stack it on a
+    // tax sign and force the player to die for the points.
+    const w = 32;
+    const h = 24;
+    const x = W + 50;
+    const margin = 50;
+    const positions = yOptions
+      .slice()
+      .sort(() => Math.random() - 0.5);
+    for (const y of positions) {
+      const proposed = { x, y, w, h };
+      const blocked = this.obstacles.some((o) => {
+        const expanded = {
+          x: o.x - margin,
+          y: o.y - margin,
+          w: o.w + margin * 2,
+          h: o.h + margin * 2,
+        };
+        return boxOverlap(proposed, expanded);
+      });
+      if (!blocked) {
+        this.collectibles.push({ x, y, w, h, type, collected: false });
+        return;
+      }
+    }
   }
 
   private die(obsType: ObstacleType): void {

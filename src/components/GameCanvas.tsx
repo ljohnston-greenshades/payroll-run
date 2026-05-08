@@ -5,8 +5,11 @@ import { Game, type GameOverInfo } from "@/game/engine";
 import { GameOverOverlay, type ScoreResult } from "./GameOverOverlay";
 
 function readSoundParam(): boolean {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("sound") === "on";
+  if (typeof window === "undefined") return true;
+  // Sound on by default. ?sound=off to start muted (e.g., for QR-scan
+  // phone players in a quiet setting). ?sound=on is still accepted for
+  // explicitness but is now redundant.
+  return new URLSearchParams(window.location.search).get("sound") !== "off";
 }
 
 export function GameCanvas() {

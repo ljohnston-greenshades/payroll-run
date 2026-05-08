@@ -2,8 +2,8 @@ export const W = 800;
 export const H = 400;
 
 export const GROUND_Y = H - 60;
-export const GRAVITY = 0.65;
-export const JUMP_FORCE = -13;
+export const GRAVITY = 0.55;
+export const JUMP_FORCE = -14;
 export const DUCK_H = 32;
 
 export const BASE_SPEED = 4.5;
