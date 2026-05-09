@@ -75,19 +75,13 @@ export interface GameOptions {
 
 const OBSTACLE_TYPES: ObstacleType[] = ["tax", "deadline", "garnishment"];
 const OBSTACLE_WEIGHTS = [0.4, 0.35, 0.25];
-// Probability bag: 6 paychecks (60%), 2 W-2s (20%), 1 shield (10%),
-// 1 paycheck filler (10%). Shields are deliberately rare so they
-// feel like a real reward.
+// Probability bag: ~75% paychecks, 20% W-2s, 5% shields. Shields are
+// rare so they feel like a real reward when one shows up.
 const COLLECTIBLE_BAG: CollectibleType[] = [
-  "paycheck",
-  "paycheck",
-  "paycheck",
-  "paycheck",
-  "paycheck",
-  "paycheck",
-  "paycheck",
-  "w2",
-  "w2",
+  "paycheck", "paycheck", "paycheck", "paycheck", "paycheck",
+  "paycheck", "paycheck", "paycheck", "paycheck", "paycheck",
+  "paycheck", "paycheck", "paycheck", "paycheck", "paycheck",
+  "w2", "w2", "w2", "w2",
   "shield",
 ];
 
@@ -747,6 +741,23 @@ export class Game {
         Colors.green,
         "left",
       );
+    }
+    if (this.state === "playing" && this.player.invincible > 0) {
+      const seconds = Math.ceil(this.player.invincible / 60);
+      // Pulse alpha in the final second to draw attention to the
+      // imminent expiry.
+      const blink = seconds <= 1 && this.frame % 12 < 6;
+      ctx.globalAlpha = blink ? 0.45 : 1;
+      drawPixelText(
+        ctx,
+        `SHIELD ${seconds}s`,
+        W / 2,
+        18,
+        9,
+        Colors.green,
+        "center",
+      );
+      ctx.globalAlpha = 1;
     }
 
     if (this.state === "title") drawTitleOverlay(ctx, this.frame);
