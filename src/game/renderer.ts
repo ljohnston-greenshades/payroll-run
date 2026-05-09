@@ -198,21 +198,21 @@ export function drawTitleOverlay(
   }
 }
 
-// Each row reserves room for the icon (~24px), a gap, and a label up
-// to ~110px (room for "GREENSHADES" or "GARNISHMENT" at 7pt).
-const LEGEND_ROW_WIDTH = 150;
-const LEGEND_ICON_OFFSET = 14; // icon center, measured from rowStart
-const LEGEND_LABEL_OFFSET = 36; // label start (left-aligned), measured from rowStart
+// Each row reserves room for the icon, a gap, and a plural label up
+// to ~140px ("GREENSHADES SHIELDS" at 7pt).
+const LEGEND_ROW_WIDTH = 200;
+const LEGEND_ICON_OFFSET = 16; // icon center, measured from rowStart
+const LEGEND_LABEL_OFFSET = 42; // label start (left-aligned), measured from rowStart
 
 const COLLECT_ITEMS: Array<[LegendIconType, string]> = [
-  ["paycheck", "PAYCHECK"],
-  ["w2", "W-2 FORM"],
-  ["shield", "GREENSHADES"],
+  ["paycheck", "PAYCHECKS"],
+  ["w2", "W-2 FORMS"],
+  ["shield", "GREENSHADES SHIELDS"],
 ];
 const DODGE_ITEMS: Array<[LegendIconType, string]> = [
-  ["tax", "IRS AUDIT"],
-  ["deadline", "DEADLINE"],
-  ["garnishment", "GARNISHMENT"],
+  ["tax", "IRS AUDITS"],
+  ["deadline", "DEADLINES"],
+  ["garnishment", "GARNISHMENTS"],
 ];
 
 function drawLegend(

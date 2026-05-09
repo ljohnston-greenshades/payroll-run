@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Game, type GameOverInfo } from "@/game/engine";
 import { setDimensions } from "@/game/constants";
 import { GameOverOverlay, type ScoreResult } from "./GameOverOverlay";
+import { RulesCard } from "./RulesCard";
 
 interface GameCanvasProps {
   screenName?: string;
@@ -27,6 +28,7 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
   const [submitting, setSubmitting] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
   const [showMobileButtons, setShowMobileButtons] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -124,6 +126,14 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
         >
           {soundOn ? "♪ ON" : "♪ OFF"}
         </button>
+        <button
+          type="button"
+          onClick={() => setRulesOpen(true)}
+          aria-label="How to play"
+          className="absolute bottom-3 left-3 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 font-pixel text-xs text-gsGreen backdrop-blur transition hover:bg-black/60"
+        >
+          ?
+        </button>
         {gameOverInfo ? (
           <GameOverOverlay
             result={scoreResult}
@@ -158,6 +168,8 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
           </button>
         </div>
       ) : null}
+
+      <RulesCard open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </div>
   );
 }
