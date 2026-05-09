@@ -239,42 +239,23 @@ export function drawCollectible(
     return;
   }
   if (col.type === "shield") {
-    // Greenshades shield power-up — uses the official gs-logo.png if
-    // it's loaded, otherwise falls back to a procedural green shield.
+    // Greenshades shield power-up — actual shield SHAPE in brand greens
+    // with a white check inside, halo behind for the rarity glow.
     const cy = y + bob;
     const cx = x + 8 * s;
     const cyMid = cy + 8 * s;
 
-    // Glow halo behind the logo
+    // Glow halo
     ctx.fillStyle = "rgba(133,196,65,0.28)";
     ctx.beginPath();
     ctx.arc(cx, cyMid, 16 * s, 0, Math.PI * 2);
     ctx.fill();
-    // Tighter inner glow
     ctx.fillStyle = "rgba(133,196,65,0.18)";
     ctx.beginPath();
     ctx.arc(cx, cyMid, 12 * s, 0, Math.PI * 2);
     ctx.fill();
 
-    const logo = getGsLogo();
-    if (logo) {
-      // Fit logo into a target area while preserving aspect ratio.
-      const target = 22 * s;
-      const aspect = logo.width / logo.height;
-      let drawW: number;
-      let drawH: number;
-      if (aspect >= 1) {
-        drawW = target;
-        drawH = target / aspect;
-      } else {
-        drawH = target;
-        drawW = target * aspect;
-      }
-      ctx.drawImage(logo, cx - drawW / 2, cyMid - drawH / 2, drawW, drawH);
-      return;
-    }
-
-    // Fallback shield (asset not loaded yet)
+    // Outer shield (dark green border)
     ctx.fillStyle = Colors.deepGreen;
     ctx.beginPath();
     ctx.moveTo(cx, cy - 1 * s);
@@ -285,6 +266,7 @@ export function drawCollectible(
     ctx.lineTo(cx - 9 * s, cy + 3 * s);
     ctx.closePath();
     ctx.fill();
+    // Inner shield (Greenshades green)
     ctx.fillStyle = Colors.green;
     ctx.beginPath();
     ctx.moveTo(cx, cy + 1 * s);
@@ -295,6 +277,7 @@ export function drawCollectible(
     ctx.lineTo(cx - 7.5 * s, cy + 4.5 * s);
     ctx.closePath();
     ctx.fill();
+    // White checkmark
     ctx.strokeStyle = Colors.white;
     ctx.lineWidth = 3 * s;
     ctx.lineCap = "round";
