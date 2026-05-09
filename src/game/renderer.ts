@@ -198,36 +198,73 @@ export function drawTitleOverlay(
   }
 }
 
+// Each row reserves room for the icon (~24px), a gap, and a label up
+// to ~110px (room for "GREENSHADES" or "GARNISHMENT" at 7pt).
+const LEGEND_ROW_WIDTH = 150;
+const LEGEND_ICON_OFFSET = 14; // icon center, measured from rowStart
+const LEGEND_LABEL_OFFSET = 36; // label start (left-aligned), measured from rowStart
+
+const COLLECT_ITEMS: Array<[LegendIconType, string]> = [
+  ["paycheck", "PAYCHECK"],
+  ["w2", "W-2 FORM"],
+  ["shield", "GREENSHADES"],
+];
+const DODGE_ITEMS: Array<[LegendIconType, string]> = [
+  ["tax", "IRS AUDIT"],
+  ["deadline", "DEADLINE"],
+  ["garnishment", "GARNISHMENT"],
+];
+
 function drawLegend(
   ctx: CanvasRenderingContext2D,
   frame: number,
   isPortrait: boolean,
 ): void {
-  const headerY = isPortrait ? H * 0.45 : H * 0.62;
-  const collectX = isPortrait ? W * 0.28 : W * 0.27;
-  const dodgeX = isPortrait ? W * 0.72 : W * 0.73;
+  if (isPortrait) {
+    drawLegendStacked(ctx, frame);
+  } else {
+    drawLegendTwoColumn(ctx, frame);
+  }
+}
 
-  drawPixelText(ctx, "COLLECT", collectX, headerY, 8, Colors.green, "center");
-  drawPixelText(ctx, "DODGE", dodgeX, headerY, 8, Colors.coral, "center");
+function drawLegendTwoColumn(
+  ctx: CanvasRenderingContext2D,
+  frame: number,
+): void {
+  const headerY = H * 0.62;
+  const collectCenter = W * 0.28;
+  const dodgeCenter = W * 0.72;
+  drawPixelText(ctx, "COLLECT", collectCenter, headerY, 8, Colors.green, "center");
+  drawPixelText(ctx, "DODGE", dodgeCenter, headerY, 8, Colors.coral, "center");
 
-  const rowSpacing = isPortrait ? 38 : 30;
-  const startRowY = headerY + (isPortrait ? 26 : 22);
-
-  const collectItems: Array<[LegendIconType, string]> = [
-    ["paycheck", "PAYCHECK"],
-    ["w2", "W-2"],
-    ["shield", "GS SHIELD"],
-  ];
-  const dodgeItems: Array<[LegendIconType, string]> = [
-    ["tax", "IRS"],
-    ["deadline", "DEADLINE"],
-    ["garnishment", "GARNISH"],
-  ];
-
+  const rowSpacing = 28;
+  const startRowY = headerY + 24;
   for (let i = 0; i < 3; i++) {
     const y = startRowY + i * rowSpacing;
-    drawLegendRow(ctx, frame, collectItems[i][0], collectItems[i][1], collectX, y);
-    drawLegendRow(ctx, frame, dodgeItems[i][0], dodgeItems[i][1], dodgeX, y);
+    drawLegendRow(ctx, frame, COLLECT_ITEMS[i][0], COLLECT_ITEMS[i][1], collectCenter, y);
+    drawLegendRow(ctx, frame, DODGE_ITEMS[i][0], DODGE_ITEMS[i][1], dodgeCenter, y);
+  }
+}
+
+// Single column with COLLECT on top of DODGE — used in portrait so the
+// longer labels (GREENSHADES, GARNISHMENT) don't crash into each other.
+function drawLegendStacked(
+  ctx: CanvasRenderingContext2D,
+  frame: number,
+): void {
+  const cx = W / 2;
+  const startY = H * 0.45;
+  const rowSpacing = 28;
+
+  drawPixelText(ctx, "COLLECT", cx, startY, 9, Colors.green, "center");
+  for (let i = 0; i < 3; i++) {
+    drawLegendRow(ctx, frame, COLLECT_ITEMS[i][0], COLLECT_ITEMS[i][1], cx, startY + 22 + i * rowSpacing);
+  }
+
+  const dodgeY = startY + 22 + 3 * rowSpacing + 14;
+  drawPixelText(ctx, "DODGE", cx, dodgeY, 9, Colors.coral, "center");
+  for (let i = 0; i < 3; i++) {
+    drawLegendRow(ctx, frame, DODGE_ITEMS[i][0], DODGE_ITEMS[i][1], cx, dodgeY + 22 + i * rowSpacing);
   }
 }
 
@@ -239,10 +276,17 @@ function drawLegendRow(
   centerX: number,
   centerY: number,
 ): void {
-  // Icon to the left of the label, both vertically centered on `centerY`.
-  const iconCenterX = centerX - 30;
-  drawLegendIcon(ctx, type, frame, iconCenterX, centerY);
-  drawPixelText(ctx, label, centerX - 18, centerY + 1, 7, Colors.white, "left");
+  const rowStart = centerX - LEGEND_ROW_WIDTH / 2;
+  drawLegendIcon(ctx, type, frame, rowStart + LEGEND_ICON_OFFSET, centerY);
+  drawPixelText(
+    ctx,
+    label,
+    rowStart + LEGEND_LABEL_OFFSET,
+    centerY + 1,
+    7,
+    Colors.white,
+    "left",
+  );
 }
 
 type LegendIconType =

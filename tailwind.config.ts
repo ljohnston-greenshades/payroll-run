@@ -11,7 +11,7 @@ const config: Config = {
       fontFamily: {
         pixel: ['"Press Start 2P"', "monospace"],
         serif: ['"PT Serif"', "serif"],
-        sans: ['"Source Sans Pro"', "system-ui", "sans-serif"],
+        sans: ['"Source Sans 3"', '"Source Sans Pro"', "system-ui", "sans-serif"],
       },
     },
   },
