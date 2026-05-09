@@ -78,13 +78,21 @@ export interface RankTier {
   title: string;
 }
 
+// Tiered job-title progression. Names are tuned for the conference
+// crowd of payroll/HR/finance pros — leans on shared in-group pain
+// (DOL audits, year-end W-2 chaos, garnishment processing) so the
+// promotions land as a wink. Thresholds are stretched so CPO and
+// CFO are actually earned, not handed out for a 30-second run.
 export const RANK_TIERS: readonly RankTier[] = [
-  { threshold: 0, title: "Payroll Intern" },
-  { threshold: 500, title: "Junior Accountant" },
-  { threshold: 1500, title: "Payroll Specialist" },
-  { threshold: 3000, title: "HR Manager" },
-  { threshold: 6000, title: "VP of People Ops" },
-  { threshold: 10000, title: "Chief Payroll Officer" },
+  { threshold: 0, title: "Pre-Coffee Intern" },
+  { threshold: 500, title: "Spreadsheet Wrangler" },
+  { threshold: 1500, title: "Garnishment Guru" },
+  { threshold: 3500, title: "Audit Survivor" },
+  { threshold: 7000, title: "Year-End Champion" },
+  { threshold: 13000, title: "Compliance Crusader" },
+  { threshold: 20000, title: "VP of People Ops" },
+  { threshold: 32000, title: "Chief Payroll Officer" },
+  { threshold: 50000, title: "CFO of the Year" },
 ];
 
 export function rankFor(score: number): string {
