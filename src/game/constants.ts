@@ -11,14 +11,28 @@ export function setDimensions(width: number, height: number): void {
   W = width;
   H = height;
   GROUND_Y = height - 60;
+  // Desktop has a wider visual field, so identical pixels/frame reads
+  // as faster. Start the desktop layout slower; mobile keeps the
+  // current pace. Ramp rate is re-derived so peak speed is reached at
+  // the same total distance regardless of base.
+  BASE_SPEED = width > 600 ? BASE_SPEED_DESKTOP : BASE_SPEED_MOBILE;
+  SPEED_RAMP_PER_DISTANCE =
+    (MAX_SPEED - BASE_SPEED) / SPEED_RAMP_DISTANCE;
 }
 export const GRAVITY = 0.55;
 export const JUMP_FORCE = -14;
 export const DUCK_H = 32;
 
-export const BASE_SPEED = 4.5;
+export const BASE_SPEED_MOBILE = 4.5;
+export const BASE_SPEED_DESKTOP = 3.5;
+export let BASE_SPEED = BASE_SPEED_MOBILE;
 export const MAX_SPEED = 10;
-export const SPEED_RAMP_PER_DISTANCE = 0.0002;
+// Distance over which speed ramps from BASE → MAX. Held constant so
+// the time-to-max feels similar on both layouts; the rate is
+// re-derived in setDimensions when BASE_SPEED changes.
+export const SPEED_RAMP_DISTANCE = 27500;
+export let SPEED_RAMP_PER_DISTANCE =
+  (MAX_SPEED - BASE_SPEED) / SPEED_RAMP_DISTANCE;
 
 // Spawn pacing is driven by distance traveled (not speed) so the
 // difficulty curve is independent of how fast the world is moving.
