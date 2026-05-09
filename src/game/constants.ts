@@ -19,7 +19,7 @@ export function setDimensions(width: number, height: number): void {
   SPEED_RAMP_PER_DISTANCE =
     (MAX_SPEED - BASE_SPEED) / SPEED_RAMP_DISTANCE;
 }
-export const GRAVITY = 0.55;
+export const GRAVITY = 0.45;
 export const JUMP_FORCE = -14;
 export const DUCK_H = 32;
 

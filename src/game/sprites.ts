@@ -277,16 +277,9 @@ export function drawCollectible(
     ctx.lineTo(cx - 7.5 * s, cy + 4.5 * s);
     ctx.closePath();
     ctx.fill();
-    // White checkmark
-    ctx.strokeStyle = Colors.white;
-    ctx.lineWidth = 3 * s;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.moveTo(cx - 4 * s, cy + 8 * s);
-    ctx.lineTo(cx - 1 * s, cy + 11 * s);
-    ctx.lineTo(cx + 5 * s, cy + 5 * s);
-    ctx.stroke();
+
+    // Circular Greenshades logo badge inside the shield
+    drawShieldLogoBadge(ctx, cx, cy + 8 * s, s);
     return;
   }
   // w2
@@ -301,4 +294,36 @@ export function drawCollectible(
   ctx.beginPath();
   ctx.arc(x + 8 * s, cy + 10 * s, 16 * s, 0, Math.PI * 2);
   ctx.fill();
+}
+
+// Circular logo badge used inside the Greenshades shield power-up.
+// Renders a white circle with the gs-logo.png inside if the asset is
+// loaded and roughly square; otherwise falls back to a green "G".
+// Exported so the legend mini-icon can match the in-game shield.
+export function drawShieldLogoBadge(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  s: number,
+): void {
+  const radius = 5.5 * s;
+  ctx.fillStyle = Colors.white;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  const logo = getGsLogo();
+  if (logo && logo.naturalWidth > 0 && logo.naturalHeight > 0) {
+    const aspect = logo.naturalWidth / logo.naturalHeight;
+    if (aspect <= 1.6) {
+      // Square-ish logo — fits nicely in the circle.
+      const dh = radius * 1.6;
+      const dw = dh * aspect;
+      ctx.drawImage(logo, cx - dw / 2, cy - dh / 2, dw, dh);
+      return;
+    }
+  }
+
+  // Fallback: green "G" mark in Press Start 2P, sized to fit the badge.
+  drawPixelText(ctx, "G", cx, cy, 5 * s, Colors.green, "center");
 }
