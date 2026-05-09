@@ -425,24 +425,24 @@ export function drawGameOverOverlay(
     Colors.warmGray,
     "center",
   );
+  drawPixelText(
+    ctx,
+    `RANK: ${rankFor(score)}`,
+    W / 2,
+    H * 0.65,
+    8,
+    Colors.teal,
+    "center",
+  );
   if (Math.sin(frame * 0.06) > 0) {
     drawPixelText(
       ctx,
       "TAP OR PRESS SPACE TO RETRY",
       W / 2,
-      H * 0.72,
+      H * 0.74,
       9,
       Colors.white,
       "center",
     );
   }
-  drawPixelText(
-    ctx,
-    `RANK: ${rankFor(score)}`,
-    W / 2,
-    H * 0.84,
-    8,
-    Colors.teal,
-    "center",
-  );
 }
