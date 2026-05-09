@@ -427,7 +427,7 @@ export function drawGameOverOverlay(
   );
   drawPixelText(
     ctx,
-    `RANK: ${rankFor(score)}`,
+    `LEVEL: ${rankFor(score)}`,
     W / 2,
     H * 0.65,
     8,
