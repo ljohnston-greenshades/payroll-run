@@ -4,6 +4,7 @@ import {
   drawPalmTree,
   drawPixelText,
   drawRect,
+  drawShieldLogoBadge,
 } from "./sprites";
 import type { BgBuilding, Cloud, PalmTree } from "./types";
 
@@ -322,7 +323,8 @@ function drawLegendIcon(
     return;
   }
   if (type === "shield") {
-    // Shield shape with white checkmark — matches the in-game power-up.
+    // Shield shape with circular Greenshades logo badge — matches
+    // the in-game power-up.
     ctx.fillStyle = Colors.deepGreen;
     ctx.beginPath();
     ctx.moveTo(cx, cy - 9);
@@ -343,15 +345,7 @@ function drawLegendIcon(
     ctx.lineTo(cx - 6, cy - 4);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = Colors.white;
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.moveTo(cx - 3, cy);
-    ctx.lineTo(cx - 1, cy + 2);
-    ctx.lineTo(cx + 3, cy - 3);
-    ctx.stroke();
+    drawShieldLogoBadge(ctx, cx, cy + 1, 0.65);
     return;
   }
   if (type === "tax") {
