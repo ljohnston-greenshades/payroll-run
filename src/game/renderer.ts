@@ -4,7 +4,6 @@ import {
   drawPalmTree,
   drawPixelText,
   drawRect,
-  getGsLogo,
 } from "./sprites";
 import type { BgBuilding, Cloud, PalmTree } from "./types";
 
@@ -323,15 +322,7 @@ function drawLegendIcon(
     return;
   }
   if (type === "shield") {
-    const logo = getGsLogo();
-    if (logo) {
-      const targetH = 18;
-      const aspect = logo.width / logo.height;
-      const w = targetH * aspect;
-      ctx.drawImage(logo, cx - w / 2, cy - targetH / 2, w, targetH);
-      return;
-    }
-    // Fallback shield while the asset loads
+    // Shield shape with white checkmark — matches the in-game power-up.
     ctx.fillStyle = Colors.deepGreen;
     ctx.beginPath();
     ctx.moveTo(cx, cy - 9);

@@ -75,12 +75,20 @@ export interface GameOptions {
 
 const OBSTACLE_TYPES: ObstacleType[] = ["tax", "deadline", "garnishment"];
 const OBSTACLE_WEIGHTS = [0.4, 0.35, 0.25];
+// Probability bag: 6 paychecks (60%), 2 W-2s (20%), 1 shield (10%),
+// 1 paycheck filler (10%). Shields are deliberately rare so they
+// feel like a real reward.
 const COLLECTIBLE_BAG: CollectibleType[] = [
   "paycheck",
   "paycheck",
   "paycheck",
-  "shield",
+  "paycheck",
+  "paycheck",
+  "paycheck",
+  "paycheck",
   "w2",
+  "w2",
+  "shield",
 ];
 
 export class Game {
