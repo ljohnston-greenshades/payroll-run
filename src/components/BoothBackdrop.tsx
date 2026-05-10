@@ -63,16 +63,16 @@ export function BoothHeader({ eventName }: Props) {
       </div>
       {eventName ? (
         <div className="text-right">
-          <p className="font-pixel text-base uppercase tracking-[0.3em] text-gsGreen lg:text-lg xl:text-2xl 2xl:text-3xl">
+          <p className="font-pixel text-sm uppercase tracking-[0.3em] text-gsGreen lg:text-base xl:text-xl 2xl:text-2xl">
             {eventName}
           </p>
         </div>
       ) : (
         <div className="text-right">
-          <p className="font-pixel text-base uppercase tracking-[0.3em] text-gsGreen lg:text-lg xl:text-2xl 2xl:text-3xl">
+          <p className="font-pixel text-sm uppercase tracking-[0.3em] text-gsGreen lg:text-base xl:text-xl 2xl:text-2xl">
             Greenshades
           </p>
-          <p className="mt-2 font-serif text-sm text-white/55 lg:text-base xl:text-lg 2xl:text-xl">
+          <p className="mt-2 font-serif text-xs text-white/55 lg:text-sm xl:text-base 2xl:text-lg">
             payroll · HR · compliance
           </p>
         </div>

@@ -36,13 +36,13 @@ export function GameOverOverlay({ result, submitting, onRetry }: Props) {
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-md bg-gsGreen px-5 py-2 font-pixel text-[0.55rem] uppercase tracking-wider text-gsNavy transition hover:brightness-110"
+          className="whitespace-nowrap rounded-md bg-gsGreen px-5 py-2 font-pixel text-[0.55rem] uppercase tracking-wider text-gsNavy transition hover:brightness-110"
         >
           Try Again
         </button>
         <Link
           href="/leaderboard"
-          className="rounded-md border border-gsGreen px-5 py-2 font-pixel text-[0.55rem] uppercase tracking-wider text-gsGreen transition hover:bg-gsGreen/10"
+          className="whitespace-nowrap rounded-md border border-gsGreen px-5 py-2 font-pixel text-[0.55rem] uppercase tracking-wider text-gsGreen transition hover:bg-gsGreen/10"
         >
           Leaderboard
         </Link>
