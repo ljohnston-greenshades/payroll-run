@@ -13,6 +13,9 @@ export class SoundEngine {
   private enabled: boolean;
   private music: HTMLAudioElement | null = null;
   private musicWanted = false;
+  private shieldOscA: OscillatorNode | null = null;
+  private shieldOscB: OscillatorNode | null = null;
+  private shieldGain: GainNode | null = null;
 
   constructor(enabled: boolean) {
     this.enabled = enabled;
@@ -21,6 +24,7 @@ export class SoundEngine {
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     this.reconcileMusic();
+    if (!enabled) this.stopShieldHum();
   }
 
   isEnabled(): boolean {
@@ -148,5 +152,83 @@ export class SoundEngine {
     [523, 659, 784, 1046, 1318].forEach((f, i) => {
       this.tone(f, 0.14, "triangle", 0.16, i * 0.07);
     });
+  }
+
+  // Triumphant shield activation: longer, richer fanfare than the
+  // standard bonus tone, immediately followed by an ambient hum that
+  // plays for the duration of the invincibility.
+  shieldActivate(): void {
+    // Two-octave-spread fanfare
+    [392, 523, 659, 784, 988, 1175].forEach((f, i) => {
+      this.tone(f, 0.18, "triangle", 0.18, i * 0.06);
+    });
+    this.startShieldHum();
+  }
+
+  shieldEnd(): void {
+    this.stopShieldHum();
+    // Brief downward sweep — "shield down."
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(523, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(196, ctx.currentTime + 0.35);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  }
+
+  private startShieldHum(): void {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    this.stopShieldHum();
+    // Two slightly-detuned sines for a shimmer, low gain so it's
+    // ambient under the music + SFX.
+    this.shieldOscA = ctx.createOscillator();
+    this.shieldOscA.type = "sine";
+    this.shieldOscA.frequency.value = 330;
+    this.shieldOscB = ctx.createOscillator();
+    this.shieldOscB.type = "sine";
+    this.shieldOscB.frequency.value = 333;
+    this.shieldGain = ctx.createGain();
+    this.shieldGain.gain.value = 0;
+    // Quick fade-in to avoid a click.
+    this.shieldGain.gain.setValueAtTime(0, ctx.currentTime);
+    this.shieldGain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 0.15);
+    this.shieldOscA.connect(this.shieldGain);
+    this.shieldOscB.connect(this.shieldGain);
+    this.shieldGain.connect(ctx.destination);
+    this.shieldOscA.start();
+    this.shieldOscB.start();
+  }
+
+  private stopShieldHum(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    if (this.shieldGain) {
+      // Fade out instead of hard-stop to avoid a click.
+      const now = ctx.currentTime;
+      this.shieldGain.gain.cancelScheduledValues(now);
+      this.shieldGain.gain.setValueAtTime(this.shieldGain.gain.value, now);
+      this.shieldGain.gain.linearRampToValueAtTime(0, now + 0.1);
+      const oscA = this.shieldOscA;
+      const oscB = this.shieldOscB;
+      const gain = this.shieldGain;
+      setTimeout(() => {
+        try { oscA?.stop(); } catch {}
+        try { oscB?.stop(); } catch {}
+        oscA?.disconnect();
+        oscB?.disconnect();
+        gain.disconnect();
+      }, 130);
+      this.shieldOscA = null;
+      this.shieldOscB = null;
+      this.shieldGain = null;
+    }
   }
 }
