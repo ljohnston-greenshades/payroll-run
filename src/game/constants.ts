@@ -38,12 +38,20 @@ export let SPEED_RAMP_PER_DISTANCE =
 // difficulty curve is independent of how fast the world is moving.
 // Holds easy spacing for SPAWN_RAMP_START distance, then linearly
 // ramps tighter through SPAWN_RAMP_END. Density only modestly
-// tightens end-to-end so the player is never overwhelmed.
+// tightens end-to-end so the player is never overwhelmed. Same
+// distance ramp window applies to collectibles below so good items
+// AND obstacles share the same cadence.
 export const SPAWN_TIMER_AT_BASE = 850;
 export const SPAWN_TIMER_AT_MAX = 300;
 export const SPAWN_RAMP_START = 5500;
 export const SPAWN_RAMP_END = 35000;
 export const SPAWN_MIN_GAP_PX = 130;
+
+// Collectible spawn pacing: sparse at start, gradually denser as
+// the run progresses. Reuses SPAWN_RAMP_START / SPAWN_RAMP_END so
+// difficulty (more obstacles) and reward (more items) ramp together.
+export const COLLECTIBLE_TIMER_AT_BASE = 450;
+export const COLLECTIBLE_TIMER_AT_MAX = 180;
 
 export const COMBO_WINDOW_FRAMES = 90;
 export const NEAR_MISS_PX = 8;
@@ -125,4 +133,22 @@ export function spawnIntervalFor(distance: number): number {
     ),
   );
   return SPAWN_TIMER_AT_BASE - t * (SPAWN_TIMER_AT_BASE - SPAWN_TIMER_AT_MAX);
+}
+
+// Distance-based collectible interval. Mirrors the obstacle ramp so
+// the run feels like it's filling out — fewer items + fewer obstacles
+// at the start, more of both as the player goes deeper.
+export function collectibleIntervalFor(distance: number): number {
+  if (distance < SPAWN_RAMP_START) return COLLECTIBLE_TIMER_AT_BASE;
+  const t = Math.max(
+    0,
+    Math.min(
+      1,
+      (distance - SPAWN_RAMP_START) / (SPAWN_RAMP_END - SPAWN_RAMP_START),
+    ),
+  );
+  return (
+    COLLECTIBLE_TIMER_AT_BASE -
+    t * (COLLECTIBLE_TIMER_AT_BASE - COLLECTIBLE_TIMER_AT_MAX)
+  );
 }
