@@ -51,7 +51,7 @@ export function BoothHeader({ eventName }: Props) {
   return (
     <header className="relative z-10 hidden items-center justify-between px-8 py-5 md:flex lg:px-16 lg:py-8 xl:px-20 xl:py-10 2xl:px-24 2xl:py-12">
       <div className="flex items-center gap-5 lg:gap-7 xl:gap-10">
-        <GreenshadesLogo className="h-10 w-auto lg:h-14 xl:h-16 2xl:h-20" />
+        <GreenshadesLogo className="h-9 w-auto lg:h-12 xl:h-14 2xl:h-16" />
         <div className="hidden border-l border-gsGreen/30 pl-5 lg:block xl:pl-8 2xl:pl-10">
           <p className="font-pixel text-[0.6rem] uppercase tracking-[0.3em] text-gsGreen lg:text-xs xl:text-sm 2xl:text-base">
             Payroll Run
@@ -88,7 +88,7 @@ export function BoothFooter() {
         Space / tap right · ↓ / tap left to duck
       </p>
       <p className="font-pixel text-[0.55rem] uppercase tracking-[0.3em] text-white/45 lg:text-xs xl:text-sm 2xl:text-base">
-        greenshades.com
+        go.greenshades.com
       </p>
     </footer>
   );

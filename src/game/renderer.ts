@@ -399,6 +399,7 @@ export function drawGameOverOverlay(
   hiScore: number,
   isNewHighScore: boolean,
   frame: number,
+  inputLocked = false,
 ): void {
   ctx.fillStyle = "rgba(6,42,71,0.92)";
   ctx.fillRect(0, 0, W, H);
@@ -433,7 +434,7 @@ export function drawGameOverOverlay(
     Colors.teal,
     "center",
   );
-  if (Math.sin(frame * 0.06) > 0) {
+  if (!inputLocked && Math.sin(frame * 0.06) > 0) {
     drawPixelText(
       ctx,
       "TAP OR PRESS SPACE TO RETRY",
