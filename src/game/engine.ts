@@ -16,6 +16,7 @@ import {
   W,
   rankFor,
   rankIndexFor,
+  collectibleIntervalFor,
   spawnIntervalFor,
 } from "./constants";
 import { InputHandler } from "./input";
@@ -381,7 +382,10 @@ export class Game {
     }
 
     this.collectibleTimer += this.speed;
-    if (this.collectibleTimer > 120 + Math.random() * 80) {
+    if (
+      this.collectibleTimer >
+      collectibleIntervalFor(this.distance) + Math.random() * 100
+    ) {
       this.spawnCollectible();
       this.collectibleTimer = 0;
     }
