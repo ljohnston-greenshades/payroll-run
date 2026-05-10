@@ -43,7 +43,7 @@ export default async function PlayPage({
       <BoothHeader eventName={eventName} />
 
       <div
-        className={`relative z-10 flex flex-1 flex-col items-center justify-center px-3 pt-3 pb-4 md:p-6 lg:p-8 ${
+        className={`relative z-10 flex flex-1 flex-col items-center justify-center px-3 pt-3 pb-[max(2.5rem,env(safe-area-inset-bottom)+1.5rem)] md:p-6 md:pb-6 lg:p-8 lg:pb-8 ${
           showSideBoard ? "xl:flex-row xl:items-center xl:gap-8" : ""
         }`}
       >
