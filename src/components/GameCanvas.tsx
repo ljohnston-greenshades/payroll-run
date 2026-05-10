@@ -122,8 +122,8 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
   };
 
   return (
-    <div className="flex w-full flex-1 flex-col items-center gap-2 min-h-0 md:flex-initial md:gap-3">
-      <div className="relative mx-auto aspect-[9/16] flex-1 min-h-0 max-h-full md:aspect-[2/1] md:flex-initial md:w-full md:max-w-[1000px] xl:max-w-[1280px] 2xl:max-w-[1500px]">
+    <div className="flex w-full flex-col items-center gap-2 md:gap-3">
+      <div className="relative mx-auto aspect-[9/16] max-h-[calc(100svh-220px)] w-full max-w-md md:aspect-[2/1] md:max-h-none md:max-w-[1000px] xl:max-w-[1280px] 2xl:max-w-[1500px]">
         <canvas
           ref={canvasRef}
           className="block h-full w-full rounded-lg shadow-2xl outline-none touch-none"
@@ -157,7 +157,7 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
       </div>
 
       {showMobileButtons ? (
-        <div className="grid w-full max-w-md grid-cols-2 gap-3 px-2 shrink-0 md:hidden">
+        <div className="grid w-full max-w-md grid-cols-2 gap-3 px-2 md:hidden">
           <button
             type="button"
             onPointerDown={buttonHandlers.duckDown}
