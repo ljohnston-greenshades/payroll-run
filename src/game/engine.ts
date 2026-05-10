@@ -135,6 +135,9 @@ export class Game {
   private shieldOriginY = 0;
   private shieldFlashTimer = 0;
   private wasInvincible = false;
+  // Brief input lockout after game over so an accidental keypress
+  // doesn't skip past the result screen and immediately restart.
+  private gameOverLockoutFrames = 0;
 
   constructor(canvas: HTMLCanvasElement, private options: GameOptions = {}) {
     canvas.width = W;
@@ -242,6 +245,7 @@ export class Game {
     this.shieldOriginY = 0;
     this.shieldFlashTimer = 0;
     this.wasInvincible = false;
+    this.gameOverLockoutFrames = 0;
     this.highestRankIndex = 0;
     this.startedAt = performance.now();
     this.player.x = Math.round(W * 0.15);
@@ -277,7 +281,12 @@ export class Game {
     }
 
     if (this.state === "gameover") {
-      if (this.input.consumeJump()) {
+      if (this.gameOverLockoutFrames > 0) {
+        this.gameOverLockoutFrames--;
+        // Discard any input received during the lockout so a button
+        // smash doesn't queue an unintended restart.
+        this.input.consumeJump();
+      } else if (this.input.consumeJump()) {
         this.beginPlaythrough();
       }
       this.particles = updateParticles(this.particles);
@@ -630,6 +639,7 @@ export class Game {
 
   private die(obsType: ObstacleType): void {
     this.state = "gameover";
+    this.gameOverLockoutFrames = 75; // ~1.25s — read your score, then retry.
     if (this.score > this.hiScore) this.hiScore = this.score;
     this.shakeTimer = 15;
     spawnParticles(this.particles, this.player.x + 20, this.player.y - 20, Colors.red, 20);
@@ -785,6 +795,7 @@ export class Game {
         this.hiScore,
         isNewHighScore,
         this.frame,
+        this.gameOverLockoutFrames > 0,
       );
     }
 
