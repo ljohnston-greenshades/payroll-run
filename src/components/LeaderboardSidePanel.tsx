@@ -88,9 +88,6 @@ export function LeaderboardSidePanel({
         <h2 className="font-pixel text-sm text-gsGreen 2xl:text-base">
           LEADERBOARD
         </h2>
-        <p className="mt-1 font-serif text-xs text-white/45 2xl:text-sm">
-          updates live
-        </p>
       </div>
       {entries.length === 0 ? (
         <div className="flex flex-1 items-center justify-center">
