@@ -43,6 +43,7 @@ import {
   drawObstacle,
   drawPixelText,
   drawRect,
+  drawShieldLogoBadge,
 } from "./sprites";
 import type {
   BgBuilding,
@@ -128,6 +129,12 @@ export class Game {
   private spawnTimer = 0;
   private collectibleTimer = 0;
   private lastObstacleX = -Infinity;
+  // Hero-moment state for the Greenshades shield power-up.
+  private shieldHeroStartFrame: number | null = null;
+  private shieldOriginX = 0;
+  private shieldOriginY = 0;
+  private shieldFlashTimer = 0;
+  private wasInvincible = false;
 
   constructor(canvas: HTMLCanvasElement, private options: GameOptions = {}) {
     canvas.width = W;
@@ -230,6 +237,11 @@ export class Game {
     this.spawnTimer = 0;
     this.collectibleTimer = 0;
     this.lastObstacleX = -Infinity;
+    this.shieldHeroStartFrame = null;
+    this.shieldOriginX = 0;
+    this.shieldOriginY = 0;
+    this.shieldFlashTimer = 0;
+    this.wasInvincible = false;
     this.highestRankIndex = 0;
     this.startedAt = performance.now();
     this.player.x = Math.round(W * 0.15);
@@ -308,6 +320,11 @@ export class Game {
     this.player.sunglassesGlint =
       Math.sin(this.frame * 0.02) > 0.85 ? 1 : 0;
     if (this.player.invincible > 0) this.player.invincible--;
+    if (this.wasInvincible && this.player.invincible === 0) {
+      this.sound.shieldEnd();
+      this.shieldHeroStartFrame = null;
+    }
+    this.wasInvincible = this.player.invincible > 0;
 
     this.player.trailTimer++;
     if (this.player.trailTimer % 4 === 0 && this.speed > 6) {
@@ -412,10 +429,16 @@ export class Game {
         this.sound.paycheck(this.combo);
       } else if (col.type === "shield") {
         points = 500;
-        text = `PROTECTED! +$${points}`;
-        spawnParticles(this.particles, col.x + 16, col.y + 12, Colors.green, 15);
+        text = `+$${points}`;
+        // Hero moment: big particle burst, screen flash, fanfare.
+        spawnParticles(this.particles, col.x + 16, col.y + 12, Colors.yellow, 28);
+        spawnParticles(this.particles, col.x + 16, col.y + 12, Colors.green, 22);
         this.player.invincible = INVINCIBILITY_FRAMES;
-        this.sound.bonus();
+        this.shieldHeroStartFrame = this.frame;
+        this.shieldOriginX = col.x + 16;
+        this.shieldOriginY = col.y + 12;
+        this.shieldFlashTimer = 18;
+        this.sound.shieldActivate();
       } else {
         points = 250 * Math.max(1, this.combo);
         text = `W-2 FILED! +$${points}`;
@@ -742,22 +765,15 @@ export class Game {
         "left",
       );
     }
-    if (this.state === "playing" && this.player.invincible > 0) {
-      const seconds = Math.ceil(this.player.invincible / 60);
-      // Pulse alpha in the final second to draw attention to the
-      // imminent expiry.
-      const blink = seconds <= 1 && this.frame % 12 < 6;
-      ctx.globalAlpha = blink ? 0.45 : 1;
-      drawPixelText(
-        ctx,
-        `SHIELD ${seconds}s`,
-        W / 2,
-        18,
-        9,
-        Colors.green,
-        "center",
-      );
-      ctx.globalAlpha = 1;
+    if (this.state === "playing" && this.shieldHeroStartFrame !== null) {
+      this.drawShieldHero(ctx);
+    }
+
+    // Brief green flash when the shield activates, fades over ~18 frames.
+    if (this.shieldFlashTimer > 0) {
+      ctx.fillStyle = `rgba(133,196,65,${(this.shieldFlashTimer / 36).toFixed(3)})`;
+      ctx.fillRect(0, 0, W, H);
+      this.shieldFlashTimer--;
     }
 
     if (this.state === "title") drawTitleOverlay(ctx, this.frame);
@@ -773,6 +789,95 @@ export class Game {
     }
 
     ctx.restore();
+  }
+
+  // Greenshades shield hero animation: G icon launches from the
+  // collection point, grows + rises, then shrinks and flies up to the
+  // HUD where it sits next to a "COMPLIANCE SHIELD Ns" countdown.
+  private drawShieldHero(ctx: CanvasRenderingContext2D): void {
+    if (this.shieldHeroStartFrame === null) return;
+    const animFrame = this.frame - this.shieldHeroStartFrame;
+    const GROW = 25;
+    const FLY = 25;
+
+    // HUD docking: G centered slightly left of canvas center, text
+    // continuing to the right.
+    const hudGX = W / 2 - 90;
+    const hudGY = 22;
+    const hudGSize = 18;
+
+    let gx: number;
+    let gy: number;
+    let gSize: number;
+
+    if (animFrame < GROW) {
+      // Phase 1: rise + grow at collection point.
+      const t = animFrame / GROW;
+      const eased = 1 - (1 - t) * (1 - t); // easeOutQuad
+      gx = this.shieldOriginX;
+      gy = this.shieldOriginY - eased * 50;
+      gSize = 24 + eased * 56; // 24 → 80
+    } else if (animFrame < GROW + FLY) {
+      // Phase 2: shrink + fly to HUD.
+      const t = (animFrame - GROW) / FLY;
+      const eased =
+        t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // easeInOut
+      const fromX = this.shieldOriginX;
+      const fromY = this.shieldOriginY - 50;
+      const fromSize = 80;
+      gx = fromX + (hudGX - fromX) * eased;
+      gy = fromY + (hudGY - fromY) * eased;
+      gSize = fromSize + (hudGSize - fromSize) * eased;
+    } else {
+      // Phase 3: parked in HUD.
+      gx = hudGX;
+      gy = hudGY;
+      gSize = hudGSize;
+    }
+
+    drawShieldLogoBadge(ctx, gx, gy, gSize / 11);
+
+    if (animFrame < GROW + FLY) {
+      // Big "COMPLIANCE SHIELD ACTIVATED!" banner during the intro,
+      // fades out as the G flies to the HUD.
+      const fade = animFrame < GROW ? 1 : 1 - (animFrame - GROW) / FLY;
+      ctx.globalAlpha = fade;
+      drawPixelText(
+        ctx,
+        "COMPLIANCE SHIELD",
+        W / 2,
+        H * 0.36,
+        H > W ? 14 : 18,
+        Colors.green,
+        "center",
+      );
+      drawPixelText(
+        ctx,
+        "ACTIVATED!",
+        W / 2,
+        H * 0.36 + (H > W ? 22 : 26),
+        H > W ? 14 : 18,
+        Colors.yellow,
+        "center",
+      );
+      ctx.globalAlpha = 1;
+    } else {
+      // HUD countdown — fades in once docked, pulses in the final second.
+      const fadeT = Math.min(1, (animFrame - GROW - FLY) / 10);
+      const seconds = Math.ceil(this.player.invincible / 60);
+      const blink = seconds <= 1 && this.frame % 12 < 6;
+      ctx.globalAlpha = fadeT * (blink ? 0.45 : 1);
+      drawPixelText(
+        ctx,
+        `COMPLIANCE SHIELD ${seconds}s`,
+        hudGX + 14,
+        hudGY,
+        9,
+        Colors.green,
+        "left",
+      );
+      ctx.globalAlpha = 1;
+    }
   }
 }
 

@@ -401,7 +401,7 @@ export function drawGameOverOverlay(
   isNewHighScore: boolean,
   frame: number,
 ): void {
-  ctx.fillStyle = "rgba(6,42,71,0.75)";
+  ctx.fillStyle = "rgba(6,42,71,0.92)";
   ctx.fillRect(0, 0, W, H);
   drawPixelText(ctx, "PAYROLL FAILED!", W / 2, H * 0.28, 22, Colors.orange, "center");
   drawPixelText(
