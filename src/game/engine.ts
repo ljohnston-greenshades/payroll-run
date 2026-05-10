@@ -163,6 +163,28 @@ export class Game {
     this.input.setDucking(active);
   }
 
+  // Fired by GameCanvas when /api/score returns position #1 with
+  // prior players. Layered fanfare + a particle burst on the canvas
+  // to compound the DOM celebration overlay.
+  celebrateNewRecord(): void {
+    this.sound.shieldActivate();
+    this.sound.promotion();
+    spawnParticles(
+      this.particles,
+      this.player.x + 20,
+      this.player.y - 30,
+      Colors.yellow,
+      40,
+    );
+    spawnParticles(
+      this.particles,
+      this.player.x + 20,
+      this.player.y - 30,
+      Colors.green,
+      30,
+    );
+  }
+
   start(): void {
     if (this.running) return;
     this.running = true;

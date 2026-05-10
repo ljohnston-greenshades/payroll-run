@@ -430,8 +430,8 @@ export function drawGameOverOverlay(
     `LEVEL: ${rankFor(score)}`,
     W / 2,
     H * 0.65,
-    8,
-    Colors.teal,
+    9,
+    Colors.sage,
     "center",
   );
   if (!inputLocked && Math.sin(frame * 0.06) > 0) {
