@@ -23,27 +23,27 @@ export const GRAVITY = 0.45;
 export const JUMP_FORCE = -14;
 export const DUCK_H = 32;
 
-export const BASE_SPEED_MOBILE = 4.5;
-export const BASE_SPEED_DESKTOP = 2.5;
+export const BASE_SPEED_MOBILE = 4.0;
+export const BASE_SPEED_DESKTOP = 2.2;
 export let BASE_SPEED = BASE_SPEED_MOBILE;
 export const MAX_SPEED = 10;
 // Distance over which speed ramps from BASE → MAX. Held constant so
 // the time-to-max feels similar on both layouts; the rate is
 // re-derived in setDimensions when BASE_SPEED changes.
-export const SPEED_RAMP_DISTANCE = 30000;
+export const SPEED_RAMP_DISTANCE = 36000;
 export let SPEED_RAMP_PER_DISTANCE =
   (MAX_SPEED - BASE_SPEED) / SPEED_RAMP_DISTANCE;
 
 // Spawn pacing is driven by distance traveled (not speed) so the
 // difficulty curve is independent of how fast the world is moving.
 // Holds easy spacing for SPAWN_RAMP_START distance, then linearly
-// ramps tighter through SPAWN_RAMP_END. Density only roughly halves
-// from start to peak (slight tightening, not extreme).
-export const SPAWN_TIMER_AT_BASE = 600;
+// ramps tighter through SPAWN_RAMP_END. Density only modestly
+// tightens end-to-end so the player is never overwhelmed.
+export const SPAWN_TIMER_AT_BASE = 850;
 export const SPAWN_TIMER_AT_MAX = 300;
-export const SPAWN_RAMP_START = 4000;
-export const SPAWN_RAMP_END = 30000;
-export const SPAWN_MIN_GAP_PX = 120;
+export const SPAWN_RAMP_START = 5500;
+export const SPAWN_RAMP_END = 35000;
+export const SPAWN_MIN_GAP_PX = 130;
 
 export const COMBO_WINDOW_FRAMES = 90;
 export const NEAR_MISS_PX = 8;
