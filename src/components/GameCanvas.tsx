@@ -110,7 +110,7 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
 
   return (
     <div className="flex w-full flex-1 flex-col items-center gap-2 min-h-0 md:flex-initial md:gap-3">
-      <div className="relative mx-auto aspect-[9/16] flex-1 min-h-0 max-h-full md:aspect-[2/1] md:flex-initial md:w-full md:max-w-[800px]">
+      <div className="relative mx-auto aspect-[9/16] flex-1 min-h-0 max-h-full md:aspect-[2/1] md:flex-initial md:w-full md:max-w-[1000px]">
         <canvas
           ref={canvasRef}
           className="block h-full w-full rounded-lg shadow-2xl outline-none touch-none"

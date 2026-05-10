@@ -39,9 +39,9 @@ export default function HomePage() {
         </div>
 
         <div className="flex w-full max-w-md flex-col text-center md:text-left">
-          <div className="mb-5 flex flex-col items-center md:items-start">
-            <GreenshadesLogo className="h-5 w-auto md:h-6" />
-            <p className="mt-2 font-serif text-[0.6rem] uppercase tracking-[0.3em] text-white/55">
+          <div className="mb-6 flex flex-col items-center md:items-start">
+            <GreenshadesLogo className="h-8 w-auto md:h-10" />
+            <p className="mt-3 font-serif text-xs uppercase tracking-[0.25em] text-white/70 md:text-sm">
               {eventName}
             </p>
           </div>
