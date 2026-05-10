@@ -18,3 +18,15 @@ body {
 .flo-bounce {
   animation: floBounce 2.2s ease-in-out infinite;
 }
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) translateX(0) rotate(var(--rot-start, 0deg));
+    opacity: 1;
+  }
+  85% { opacity: 1; }
+  100% {
+    transform: translateY(110vh) translateX(var(--sway, 0px)) rotate(var(--rot-end, 720deg));
+    opacity: 0;
+  }
+}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Game, type GameOverInfo } from "@/game/engine";
 import { setDimensions } from "@/game/constants";
 import { GameOverOverlay, type ScoreResult } from "./GameOverOverlay";
+import { NewRecordCelebration } from "./NewRecordCelebration";
 import { RulesCard } from "./RulesCard";
 
 interface GameCanvasProps {
@@ -29,6 +30,7 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
   const [soundOn, setSoundOn] = useState(false);
   const [showMobileButtons, setShowMobileButtons] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [newRecordInfo, setNewRecordInfo] = useState<GameOverInfo | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,6 +53,7 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
         setGameOverInfo(null);
         setScoreResult(null);
         setSubmitting(false);
+        setNewRecordInfo(null);
         fetch("/api/game-start", { method: "POST" }).catch(() => {});
       },
       onGameOver: async (info) => {
@@ -68,6 +71,16 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
           }
           const data = (await res.json()) as ScoreResult;
           setScoreResult(data);
+          // Top of the leaderboard with at least one prior player =
+          // a true booth record. Fire the celebration.
+          if (
+            data.position === 1 &&
+            typeof data.total === "number" &&
+            data.total > 1
+          ) {
+            setNewRecordInfo(info);
+            gameRef.current?.celebrateNewRecord();
+          }
         } catch {
           setScoreResult({ error: true });
         } finally {
@@ -170,6 +183,13 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
       ) : null}
 
       <RulesCard open={rulesOpen} onClose={() => setRulesOpen(false)} />
+      {newRecordInfo ? (
+        <NewRecordCelebration
+          score={newRecordInfo.score}
+          level={newRecordInfo.rankTitle}
+          onDismiss={() => setNewRecordInfo(null)}
+        />
+      ) : null}
     </div>
   );
 }
