@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
 import { getCurrentPlayer } from "@/lib/session";
+import {
+  BoothBackdrop,
+  BoothFooter,
+  BoothHeader,
+} from "@/components/BoothBackdrop";
 import { GameCanvas } from "@/components/GameCanvas";
 
 export const dynamic = "force-dynamic";
@@ -10,12 +15,18 @@ export default async function PlayPage() {
     redirect("/");
   }
 
+  const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "";
+
   return (
-    <main className="flex h-[100dvh] flex-col items-center px-3 py-3 md:justify-center md:gap-3 md:p-4">
-      <GameCanvas screenName={player.screen_name} />
-      <p className="mt-2 hidden font-serif text-xs text-white/50 md:block">
-        Space / tap right · Down arrow / tap left to duck
-      </p>
+    <main className="relative flex h-[100dvh] flex-col items-stretch overflow-hidden">
+      <BoothBackdrop eventName={eventName} />
+      <BoothHeader eventName={eventName} />
+
+      <div className="relative z-10 flex flex-1 items-center justify-center px-3 py-3 md:p-6 lg:p-8">
+        <GameCanvas screenName={player.screen_name} />
+      </div>
+
+      <BoothFooter />
     </main>
   );
 }
