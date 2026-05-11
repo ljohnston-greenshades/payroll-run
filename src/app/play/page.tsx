@@ -44,12 +44,12 @@ export default async function PlayPage({
 
       <div
         className={`relative z-10 flex flex-1 flex-col items-center justify-end px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:justify-center md:p-6 md:pb-6 lg:p-8 lg:pb-8 ${
-          showSideBoard ? "xl:flex-row xl:items-center xl:gap-8" : ""
+          showSideBoard ? "xl:flex-row xl:items-stretch xl:justify-center xl:gap-8" : ""
         }`}
       >
         <div
           className={`flex w-full ${
-            showSideBoard ? "xl:max-w-[1100px]" : ""
+            showSideBoard ? "xl:max-w-[1100px] xl:items-center" : ""
           } flex-1 min-h-0 justify-center`}
         >
           <GameCanvas screenName={player.screen_name} />
