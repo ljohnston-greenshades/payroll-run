@@ -83,7 +83,7 @@ export function LeaderboardSidePanel({
   }, [eventSlug]);
 
   return (
-    <aside className="hidden h-full w-[320px] flex-col rounded-lg border border-gsGreen/30 bg-white/[0.04] p-4 xl:flex 2xl:w-[380px] 2xl:p-5">
+    <aside className="hidden w-[320px] flex-col self-center rounded-lg border border-gsGreen/30 bg-white/[0.04] p-4 xl:flex xl:h-[550px] 2xl:w-[380px] 2xl:p-5">
       <div className="mb-3 border-b border-gsGreen/20 pb-2 2xl:mb-4 2xl:pb-3">
         <h2 className="font-pixel text-sm text-gsGreen 2xl:text-base">
           LEADERBOARD
