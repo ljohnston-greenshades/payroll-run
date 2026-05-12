@@ -54,8 +54,12 @@ export function drawFlamingo(
   legFrame: number,
   glint: number,
   frame: number,
+  invincible = false,
 ): void {
   const s = 2;
+  // Sunglasses swap to Greenshades green while a shield is active —
+  // visible cue that Flo is invincible.
+  const lensColor = invincible ? Colors.green : Colors.charcoal;
   if (ducking) {
     drawRect(ctx, px - 2 * s, py - 6 * s, 20 * s, 8 * s, Colors.pink);
     drawRect(ctx, px, py - 8 * s, 16 * s, 2 * s, Colors.pink);
@@ -64,7 +68,7 @@ export function drawFlamingo(
     drawRect(ctx, px + 20 * s, py - 10 * s, 4 * s, 2 * s, Colors.pink);
     drawRect(ctx, px + 24 * s, py - 8 * s, 4 * s, 3 * s, Colors.orange);
     drawRect(ctx, px + 24 * s, py - 5 * s, 3 * s, 2 * s, Colors.charcoal);
-    drawRect(ctx, px + 20 * s, py - 9 * s, 5 * s, 3 * s, Colors.charcoal);
+    drawRect(ctx, px + 20 * s, py - 9 * s, 5 * s, 3 * s, lensColor);
     if (glint > 0) drawRect(ctx, px + 21 * s, py - 9 * s, 2 * s, 1 * s, Colors.white);
     drawRect(ctx, px + 4 * s, py + 2 * s, 2 * s, 3 * s, Colors.coral);
     drawRect(ctx, px + 10 * s, py + 2 * s, 2 * s, 3 * s, Colors.coral);
@@ -83,8 +87,8 @@ export function drawFlamingo(
   drawRect(ctx, hx + 2 * s, hy - 2 * s, 6 * s, 2 * s, Colors.pink);
   drawRect(ctx, hx + 10 * s, hy + 1 * s, 6 * s, 3 * s, Colors.orange);
   drawRect(ctx, hx + 10 * s, hy + 4 * s, 5 * s, 2 * s, Colors.charcoal);
-  drawRect(ctx, hx + 4 * s, hy + 1 * s, 7 * s, 3 * s, Colors.charcoal);
-  drawRect(ctx, hx + 3 * s, hy + 1 * s, 2 * s, 3 * s, Colors.charcoal);
+  drawRect(ctx, hx + 4 * s, hy + 1 * s, 7 * s, 3 * s, lensColor);
+  drawRect(ctx, hx + 3 * s, hy + 1 * s, 2 * s, 3 * s, lensColor);
   if (glint > 0) drawRect(ctx, hx + 5 * s, hy + 1 * s, 2 * s, 1 * s, Colors.white);
 
   drawRect(ctx, px + 2 * s, py - 12 * s, 16 * s, 14 * s, Colors.pink);

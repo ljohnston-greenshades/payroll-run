@@ -760,6 +760,7 @@ export class Game {
       this.player.legFrame,
       this.player.sunglassesGlint,
       this.frame,
+      this.player.invincible > 0,
     );
 
     if (this.combo > 1 && this.comboTimer > 0) {
