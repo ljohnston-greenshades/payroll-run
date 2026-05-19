@@ -68,17 +68,16 @@ export function drawFlamingo(
     drawRect(ctx, px + 20 * s, py - 10 * s, 4 * s, 2 * s, Colors.pink);
     drawRect(ctx, px + 24 * s, py - 8 * s, 4 * s, 3 * s, Colors.orange);
     drawRect(ctx, px + 24 * s, py - 5 * s, 3 * s, 2 * s, Colors.charcoal);
-    // Twin-lens shades: top frame + two lenses + bridge
-    drawRect(ctx, px + 19 * s, py - 10 * s, 5 * s, 1 * s, lensColor);
-    drawRect(ctx, px + 19 * s, py - 9 * s, 2 * s, 3 * s, lensColor);
-    drawRect(ctx, px + 22 * s, py - 9 * s, 2 * s, 3 * s, lensColor);
-    drawRect(ctx, px + 21 * s, py - 8 * s, 1 * s, 1 * s, lensColor);
+    drawRect(ctx, px + 20 * s, py - 9 * s, 5 * s, 3 * s, lensColor);
+    if (glint > 0) drawRect(ctx, px + 21 * s, py - 9 * s, 2 * s, 1 * s, Colors.white);
     if (invincible) {
-      // Bright neon highlight inside each lens when shielded
-      drawRect(ctx, px + 19 * s, py - 9 * s, 1 * s, 1 * s, "#b6ff5a");
-      drawRect(ctx, px + 23 * s, py - 9 * s, 1 * s, 1 * s, "#b6ff5a");
+      // Greenshades visor — the literal accountant eyeshade the
+      // company was named for. Sits on top of the head, brim
+      // extending forward past the bill.
+      drawRect(ctx, px + 19 * s, py - 12 * s, 6 * s, 1 * s, Colors.greenDark);
+      drawRect(ctx, px + 19 * s, py - 11 * s, 6 * s, 1 * s, Colors.green);
+      drawRect(ctx, px + 17 * s, py - 10 * s, 9 * s, 1 * s, Colors.green);
     }
-    if (glint > 0) drawRect(ctx, px + 19 * s, py - 9 * s, 1 * s, 1 * s, Colors.white);
     drawRect(ctx, px + 4 * s, py + 2 * s, 2 * s, 3 * s, Colors.coral);
     drawRect(ctx, px + 10 * s, py + 2 * s, 2 * s, 3 * s, Colors.coral);
     drawRect(ctx, px - 4 * s, py - 6 * s, 4 * s, 4 * s, Colors.hotPink);
@@ -96,17 +95,21 @@ export function drawFlamingo(
   drawRect(ctx, hx + 2 * s, hy - 2 * s, 6 * s, 2 * s, Colors.pink);
   drawRect(ctx, hx + 10 * s, hy + 1 * s, 6 * s, 3 * s, Colors.orange);
   drawRect(ctx, hx + 10 * s, hy + 4 * s, 5 * s, 2 * s, Colors.charcoal);
-  // Twin-lens shades — top brow + two lenses + bridge
-  drawRect(ctx, hx + 2 * s, hy + 0 * s, 7 * s, 1 * s, lensColor);
-  drawRect(ctx, hx + 2 * s, hy + 1 * s, 3 * s, 3 * s, lensColor);
-  drawRect(ctx, hx + 6 * s, hy + 1 * s, 3 * s, 3 * s, lensColor);
-  drawRect(ctx, hx + 5 * s, hy + 2 * s, 1 * s, 1 * s, lensColor);
+  drawRect(ctx, hx + 4 * s, hy + 1 * s, 7 * s, 3 * s, lensColor);
+  drawRect(ctx, hx + 3 * s, hy + 1 * s, 2 * s, 3 * s, lensColor);
+  if (glint > 0) drawRect(ctx, hx + 5 * s, hy + 1 * s, 2 * s, 1 * s, Colors.white);
   if (invincible) {
-    // Bright neon highlight inside each lens — "shield activated" glow
-    drawRect(ctx, hx + 3 * s, hy + 2 * s, 1 * s, 1 * s, "#b6ff5a");
-    drawRect(ctx, hx + 7 * s, hy + 2 * s, 1 * s, 1 * s, "#b6ff5a");
+    // Greenshades visor — green eyeshade like classic accountant /
+    // poker-dealer headwear. The name origin baked into the sprite:
+    // pixel headband around the skull, brim extending forward and
+    // past the head sides.
+    drawRect(ctx, hx + 2 * s, hy - 3 * s, 6 * s, 1 * s, Colors.greenDark);
+    drawRect(ctx, hx + 2 * s, hy - 2 * s, 6 * s, 1 * s, Colors.green);
+    drawRect(ctx, hx - 1 * s, hy - 1 * s, 12 * s, 1 * s, Colors.green);
+    drawRect(ctx, hx - 1 * s, hy + 0 * s, 12 * s, 1 * s, Colors.greenDark);
+    // Bright highlight on the shades so they pop against the visor
+    drawRect(ctx, hx + 5 * s, hy + 2 * s, 1 * s, 1 * s, "#b6ff5a");
   }
-  if (glint > 0) drawRect(ctx, hx + 3 * s, hy + 1 * s, 1 * s, 1 * s, Colors.white);
 
   drawRect(ctx, px + 2 * s, py - 12 * s, 16 * s, 14 * s, Colors.pink);
   drawRect(ctx, px, py - 10 * s, 20 * s, 10 * s, Colors.pink);
