@@ -57,9 +57,6 @@ export function drawFlamingo(
   invincible = false,
 ): void {
   const s = 2;
-  // Sunglasses swap to Greenshades green while a shield is active —
-  // visible cue that Flo is invincible.
-  const lensColor = invincible ? Colors.green : Colors.charcoal;
   if (ducking) {
     drawRect(ctx, px - 2 * s, py - 6 * s, 20 * s, 8 * s, Colors.pink);
     drawRect(ctx, px, py - 8 * s, 16 * s, 2 * s, Colors.pink);
@@ -68,15 +65,18 @@ export function drawFlamingo(
     drawRect(ctx, px + 20 * s, py - 10 * s, 4 * s, 2 * s, Colors.pink);
     drawRect(ctx, px + 24 * s, py - 8 * s, 4 * s, 3 * s, Colors.orange);
     drawRect(ctx, px + 24 * s, py - 5 * s, 3 * s, 2 * s, Colors.charcoal);
-    drawRect(ctx, px + 20 * s, py - 9 * s, 5 * s, 3 * s, lensColor);
-    if (glint > 0) drawRect(ctx, px + 21 * s, py - 9 * s, 2 * s, 1 * s, Colors.white);
     if (invincible) {
-      // Greenshades visor — the literal accountant eyeshade the
-      // company was named for. Sits on top of the head, brim
-      // extending forward past the bill.
-      drawRect(ctx, px + 19 * s, py - 12 * s, 6 * s, 1 * s, Colors.greenDark);
-      drawRect(ctx, px + 19 * s, py - 11 * s, 6 * s, 1 * s, Colors.green);
-      drawRect(ctx, px + 17 * s, py - 10 * s, 9 * s, 1 * s, Colors.green);
+      // Bigger green frame around black lenses — the "compliance shield"
+      // upgrade to Flo's eyewear. Green rectangle is the frame; two
+      // charcoal rects on top are the lenses. The exposed green
+      // between/around the lenses is the frame's outline + bridge.
+      drawRect(ctx, px + 19 * s, py - 10 * s, 7 * s, 5 * s, Colors.green);
+      drawRect(ctx, px + 20 * s, py - 9 * s, 2 * s, 3 * s, Colors.charcoal);
+      drawRect(ctx, px + 23 * s, py - 9 * s, 2 * s, 3 * s, Colors.charcoal);
+      if (glint > 0) drawRect(ctx, px + 20 * s, py - 9 * s, 1 * s, 1 * s, Colors.white);
+    } else {
+      drawRect(ctx, px + 20 * s, py - 9 * s, 5 * s, 3 * s, Colors.charcoal);
+      if (glint > 0) drawRect(ctx, px + 21 * s, py - 9 * s, 2 * s, 1 * s, Colors.white);
     }
     drawRect(ctx, px + 4 * s, py + 2 * s, 2 * s, 3 * s, Colors.coral);
     drawRect(ctx, px + 10 * s, py + 2 * s, 2 * s, 3 * s, Colors.coral);
@@ -95,20 +95,19 @@ export function drawFlamingo(
   drawRect(ctx, hx + 2 * s, hy - 2 * s, 6 * s, 2 * s, Colors.pink);
   drawRect(ctx, hx + 10 * s, hy + 1 * s, 6 * s, 3 * s, Colors.orange);
   drawRect(ctx, hx + 10 * s, hy + 4 * s, 5 * s, 2 * s, Colors.charcoal);
-  drawRect(ctx, hx + 4 * s, hy + 1 * s, 7 * s, 3 * s, lensColor);
-  drawRect(ctx, hx + 3 * s, hy + 1 * s, 2 * s, 3 * s, lensColor);
-  if (glint > 0) drawRect(ctx, hx + 5 * s, hy + 1 * s, 2 * s, 1 * s, Colors.white);
   if (invincible) {
-    // Greenshades visor — green eyeshade like classic accountant /
-    // poker-dealer headwear. The name origin baked into the sprite:
-    // pixel headband around the skull, brim extending forward and
-    // past the head sides.
-    drawRect(ctx, hx + 2 * s, hy - 3 * s, 6 * s, 1 * s, Colors.greenDark);
-    drawRect(ctx, hx + 2 * s, hy - 2 * s, 6 * s, 1 * s, Colors.green);
-    drawRect(ctx, hx - 1 * s, hy - 1 * s, 12 * s, 1 * s, Colors.green);
-    drawRect(ctx, hx - 1 * s, hy + 0 * s, 12 * s, 1 * s, Colors.greenDark);
-    // Bright highlight on the shades so they pop against the visor
-    drawRect(ctx, hx + 5 * s, hy + 2 * s, 1 * s, 1 * s, "#b6ff5a");
+    // Bigger green-framed shades with black lenses for compliance
+    // shield mode. The green rect is the full frame; two black rects
+    // sit on top as the lenses, with the gap between them showing
+    // through as the bridge.
+    drawRect(ctx, hx + 2 * s, hy + 0 * s, 9 * s, 5 * s, Colors.green);
+    drawRect(ctx, hx + 3 * s, hy + 1 * s, 3 * s, 3 * s, Colors.charcoal);
+    drawRect(ctx, hx + 7 * s, hy + 1 * s, 3 * s, 3 * s, Colors.charcoal);
+    if (glint > 0) drawRect(ctx, hx + 4 * s, hy + 1 * s, 1 * s, 1 * s, Colors.white);
+  } else {
+    drawRect(ctx, hx + 4 * s, hy + 1 * s, 7 * s, 3 * s, Colors.charcoal);
+    drawRect(ctx, hx + 3 * s, hy + 1 * s, 2 * s, 3 * s, Colors.charcoal);
+    if (glint > 0) drawRect(ctx, hx + 5 * s, hy + 1 * s, 2 * s, 1 * s, Colors.white);
   }
 
   drawRect(ctx, px + 2 * s, py - 12 * s, 16 * s, 14 * s, Colors.pink);
