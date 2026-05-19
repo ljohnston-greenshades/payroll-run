@@ -282,6 +282,7 @@ export class Game {
   }
 
   private tick(): void {
+    this.input.pollGamepad();
     this.update();
     this.draw();
   }
