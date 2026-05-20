@@ -274,6 +274,209 @@ export async function deleteScore(scoreId: string): Promise<void> {
   await sql`DELETE FROM scores WHERE id = ${scoreId}`;
 }
 
+// ── Booth queue ────────────────────────────────────────────────────────
+
+export type QueueStatus =
+  | "waiting"
+  | "ready"
+  | "playing"
+  | "done"
+  | "expired";
+
+export interface QueueEntry {
+  id: string;
+  player_id: string;
+  screen_name: string;
+  event_slug: string;
+  status: QueueStatus;
+  queue_token: string;
+  queued_at: Date;
+  ready_at: Date | null;
+  claimed_at: Date | null;
+  finished_at: Date | null;
+}
+
+// Booth promotes a "waiting" entry to "ready" if there's no active
+// ready/playing entry. 30-second TTL on the ready state — if the player
+// doesn't press JUMP in time, the booth flips them to expired and
+// promotes the next one.
+const READY_TTL_MS = 30_000;
+const PLAYING_WATCHDOG_MS = 5 * 60_000;
+
+export async function enqueueForBooth(
+  playerId: string,
+  screenName: string,
+  eventSlug: string,
+): Promise<QueueEntry> {
+  const { rows } = await sql<QueueEntry>`
+    INSERT INTO play_queue (player_id, screen_name, event_slug)
+    VALUES (${playerId}, ${screenName}, ${eventSlug})
+    RETURNING *
+  `;
+  return rows[0];
+}
+
+export async function getQueueEntry(token: string): Promise<QueueEntry | null> {
+  const { rows } = await sql<QueueEntry>`
+    SELECT * FROM play_queue WHERE queue_token = ${token} LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
+export async function getQueuePosition(
+  entry: QueueEntry,
+): Promise<number> {
+  if (entry.status === "ready") return 1;
+  if (entry.status === "playing") return 0;
+  if (entry.status === "done" || entry.status === "expired") return -1;
+  // entry.queued_at may arrive from pg as a Date or an ISO string
+  // depending on driver flags; pass either through to the parameter
+  // and let pg cast.
+  const queuedAt =
+    entry.queued_at instanceof Date
+      ? entry.queued_at.toISOString()
+      : (entry.queued_at as unknown as string);
+  const { rows } = await sql<{ ahead: string }>`
+    SELECT COUNT(*)::text AS ahead
+    FROM play_queue
+    WHERE event_slug = ${entry.event_slug}
+      AND status = 'waiting'
+      AND queued_at < ${queuedAt}
+  `;
+  // +2 because position #1 is the currently-ready player (not in
+  // "waiting" anymore) and we want this entry's spot in line.
+  return Number(rows[0]?.ahead ?? 0) + 2;
+}
+
+export async function getQueueDepth(eventSlug: string): Promise<number> {
+  const { rows } = await sql<{ count: string }>`
+    SELECT COUNT(*)::text AS count
+    FROM play_queue
+    WHERE event_slug = ${eventSlug}
+      AND status IN ('waiting', 'ready', 'playing')
+  `;
+  return Number(rows[0]?.count ?? 0);
+}
+
+// Average duration of the last 20 completed plays at this event, used
+// to compute ETAs. Returns null if there aren't enough samples yet —
+// callers fall back to a sensible default.
+export async function getRollingAvgDuration(
+  eventSlug: string,
+): Promise<number | null> {
+  const { rows } = await sql<{ avg: string | null; n: string }>`
+    SELECT AVG(duration_seconds)::text AS avg, COUNT(*)::text AS n
+    FROM (
+      SELECT duration_seconds
+      FROM scores
+      WHERE event_slug = ${eventSlug}
+      ORDER BY created_at DESC
+      LIMIT 20
+    ) AS recent
+  `;
+  const n = Number(rows[0]?.n ?? 0);
+  if (n < 3) return null;
+  return Number(rows[0]?.avg ?? 0);
+}
+
+// Time-out any stale entries before reading queue state. ready entries
+// older than READY_TTL_MS become expired; playing entries older than
+// PLAYING_WATCHDOG_MS also expire (booth crash protection).
+export async function reapStaleQueueEntries(eventSlug: string): Promise<void> {
+  await sql`
+    UPDATE play_queue
+    SET status = 'expired'
+    WHERE event_slug = ${eventSlug}
+      AND status = 'ready'
+      AND ready_at < NOW() - (${READY_TTL_MS} || ' milliseconds')::interval
+  `;
+  await sql`
+    UPDATE play_queue
+    SET status = 'expired'
+    WHERE event_slug = ${eventSlug}
+      AND status = 'playing'
+      AND claimed_at < NOW() - (${PLAYING_WATCHDOG_MS} || ' milliseconds')::interval
+  `;
+}
+
+// Returns whichever entry is currently in the spotlight on the booth:
+// the playing one if any, else the ready one if any, else promotes the
+// next waiting entry to ready and returns it.
+export async function getOrPromoteNextEntry(
+  eventSlug: string,
+): Promise<QueueEntry | null> {
+  await reapStaleQueueEntries(eventSlug);
+
+  const active = await sql<QueueEntry>`
+    SELECT * FROM play_queue
+    WHERE event_slug = ${eventSlug}
+      AND status IN ('playing', 'ready')
+    ORDER BY
+      CASE status WHEN 'playing' THEN 0 ELSE 1 END,
+      queued_at ASC
+    LIMIT 1
+  `;
+  if (active.rows[0]) return active.rows[0];
+
+  const next = await sql<QueueEntry>`
+    UPDATE play_queue
+    SET status = 'ready', ready_at = NOW()
+    WHERE id = (
+      SELECT id FROM play_queue
+      WHERE event_slug = ${eventSlug}
+        AND status = 'waiting'
+      ORDER BY queued_at ASC
+      LIMIT 1
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING *
+  `;
+  return next.rows[0] ?? null;
+}
+
+export async function markQueuePlaying(entryId: string): Promise<QueueEntry | null> {
+  const { rows } = await sql<QueueEntry>`
+    UPDATE play_queue
+    SET status = 'playing', claimed_at = NOW()
+    WHERE id = ${entryId} AND status = 'ready'
+    RETURNING *
+  `;
+  return rows[0] ?? null;
+}
+
+export async function markQueueDone(entryId: string): Promise<void> {
+  await sql`
+    UPDATE play_queue
+    SET status = 'done', finished_at = NOW()
+    WHERE id = ${entryId}
+  `;
+}
+
+export async function markQueueExpired(entryId: string): Promise<void> {
+  await sql`
+    UPDATE play_queue
+    SET status = 'expired', finished_at = NOW()
+    WHERE id = ${entryId}
+  `;
+}
+
+// Close out the playing queue entry for a specific player. Called from
+// /api/score so only that player's own booth run gets finished; a
+// concurrent self-serve player's score submission won't kick the booth
+// queue forward.
+export async function markPlayerActiveRunDone(
+  playerId: string,
+  eventSlug: string,
+): Promise<void> {
+  await sql`
+    UPDATE play_queue
+    SET status = 'done', finished_at = NOW()
+    WHERE player_id = ${playerId}
+      AND event_slug = ${eventSlug}
+      AND status = 'playing'
+  `;
+}
+
 export async function getFailedHubspotPlayers(
   eventSlug: string,
 ): Promise<Player[]> {

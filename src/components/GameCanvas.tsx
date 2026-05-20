@@ -9,6 +9,12 @@ import { RulesCard } from "./RulesCard";
 
 interface GameCanvasProps {
   screenName?: string;
+  // event = self-serve (current behavior, default)
+  // booth = TV/queue flow: auto-start, notify parent on game over
+  // casual = no score submission (404 page / embeds)
+  mode?: "event" | "booth" | "casual";
+  autoStart?: boolean;
+  onGameOver?: () => void;
 }
 
 function readSoundParam(): boolean {
@@ -21,7 +27,12 @@ function isPortraitViewport(): boolean {
   return window.innerHeight > window.innerWidth && window.innerWidth < 900;
 }
 
-export function GameCanvas({ screenName }: GameCanvasProps) {
+export function GameCanvas({
+  screenName,
+  mode = "event",
+  autoStart = false,
+  onGameOver: onGameOverProp,
+}: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<Game | null>(null);
   const [gameOverInfo, setGameOverInfo] = useState<GameOverInfo | null>(null);
@@ -54,10 +65,17 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
         setScoreResult(null);
         setSubmitting(false);
         setNewRecordInfo(null);
-        fetch("/api/game-start", { method: "POST" }).catch(() => {});
+        if (mode !== "casual") {
+          fetch("/api/game-start", { method: "POST" }).catch(() => {});
+        }
       },
       onGameOver: async (info) => {
         setGameOverInfo(info);
+        if (mode === "casual") {
+          // No backend submission for embedded / 404 mode.
+          onGameOverProp?.();
+          return;
+        }
         setSubmitting(true);
         try {
           const res = await fetch("/api/score", {
@@ -85,16 +103,23 @@ export function GameCanvas({ screenName }: GameCanvasProps) {
           setScoreResult({ error: true });
         } finally {
           setSubmitting(false);
+          onGameOverProp?.();
         }
       },
     });
     gameRef.current = game;
     game.start();
+    if (autoStart) {
+      // Skip the title screen — go straight into a playthrough. Used
+      // by the booth flow where the player has already been promoted
+      // and the TV said "press JUMP."
+      game.restart();
+    }
     return () => {
       game.stop();
       gameRef.current = null;
     };
-  }, [screenName]);
+  }, [screenName, mode, autoStart, onGameOverProp]);
 
   const handleRetry = () => {
     gameRef.current?.restart();

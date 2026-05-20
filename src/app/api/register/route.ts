@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateRegistration } from "@/lib/validation";
 import {
   createPlayer,
+  enqueueForBooth,
   findPlayerByEmailAndEvent,
   markHubspotSubmitted,
 } from "@/lib/db";
@@ -31,10 +32,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const { firstName, lastName, email, company, screenName } = result.data;
+  const mode =
+    typeof (body as Record<string, unknown>).mode === "string"
+      ? ((body as Record<string, unknown>).mode as string)
+      : "event";
+  const queueing = mode === "booth";
 
   const existing = await findPlayerByEmailAndEvent(email, eventSlug);
   if (existing) {
     setSessionCookie(existing.session_token);
+    if (queueing) {
+      const entry = await enqueueForBooth(existing.id, existing.screen_name, eventSlug);
+      return NextResponse.json({
+        ok: true,
+        returning: true,
+        queueToken: entry.queue_token,
+      });
+    }
     return NextResponse.json({ ok: true, returning: true });
   }
 
@@ -62,6 +76,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   });
   if (submitted) {
     await markHubspotSubmitted(player.id);
+  }
+
+  if (queueing) {
+    const entry = await enqueueForBooth(player.id, player.screen_name, eventSlug);
+    return NextResponse.json({
+      ok: true,
+      returning: false,
+      queueToken: entry.queue_token,
+    });
   }
 
   return NextResponse.json({ ok: true, returning: false });
