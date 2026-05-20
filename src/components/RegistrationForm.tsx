@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 type FormState = {
@@ -31,6 +31,8 @@ function inferCompanyFromEmail(email: string): string {
 
 export function RegistrationForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") === "booth" ? "booth" : "event";
   const [form, setForm] = useState<FormState>(EMPTY);
   const [companyTouched, setCompanyTouched] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -63,7 +65,7 @@ export function RegistrationForm() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, mode }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -72,7 +74,11 @@ export function RegistrationForm() {
         setIsSubmitting(false);
         return;
       }
-      router.push("/play");
+      if (mode === "booth" && data?.queueToken) {
+        router.push(`/queue/${data.queueToken}`);
+      } else {
+        router.push("/play");
+      }
     } catch {
       setGeneralError("Network error. Try again.");
       setIsSubmitting(false);

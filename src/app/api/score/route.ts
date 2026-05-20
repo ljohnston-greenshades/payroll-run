@@ -4,6 +4,7 @@ import {
   getLeaderboardPosition,
   getPersonalBest,
   insertScore,
+  markPlayerActiveRunDone,
   recordScoreSubmitted,
 } from "@/lib/db";
 import { getCurrentPlayer } from "@/lib/session";
@@ -74,6 +75,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     eventSlug,
   });
   await recordScoreSubmitted(player.id);
+  // If this score came from a booth playthrough, close out the queue
+  // entry so the next person can be promoted. No-op for self-serve.
+  await markPlayerActiveRunDone(player.id, eventSlug);
 
   const personalBest = await getPersonalBest(player.id, eventSlug);
   const { position, total } = await getLeaderboardPosition(eventSlug, score);
