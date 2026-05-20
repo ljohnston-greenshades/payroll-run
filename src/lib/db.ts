@@ -336,16 +336,22 @@ export async function getQueuePosition(
     entry.queued_at instanceof Date
       ? entry.queued_at.toISOString()
       : (entry.queued_at as unknown as string);
-  const { rows } = await sql<{ ahead: string }>`
-    SELECT COUNT(*)::text AS ahead
-    FROM play_queue
-    WHERE event_slug = ${entry.event_slug}
-      AND status = 'waiting'
-      AND queued_at < ${queuedAt}
+  const { rows } = await sql<{
+    waiting_ahead: string;
+    active_ahead: string;
+  }>`
+    SELECT
+      (SELECT COUNT(*)::text FROM play_queue
+        WHERE event_slug = ${entry.event_slug}
+          AND status = 'waiting'
+          AND queued_at < ${queuedAt}) AS waiting_ahead,
+      (SELECT COUNT(*)::text FROM play_queue
+        WHERE event_slug = ${entry.event_slug}
+          AND status IN ('ready', 'playing')) AS active_ahead
   `;
-  // +2 because position #1 is the currently-ready player (not in
-  // "waiting" anymore) and we want this entry's spot in line.
-  return Number(rows[0]?.ahead ?? 0) + 2;
+  const waitingAhead = Number(rows[0]?.waiting_ahead ?? 0);
+  const activeAhead = Number(rows[0]?.active_ahead ?? 0);
+  return waitingAhead + activeAhead + 1;
 }
 
 export async function getQueueDepth(eventSlug: string): Promise<number> {
