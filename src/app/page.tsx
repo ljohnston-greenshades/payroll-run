@@ -2,6 +2,8 @@ import Image from "next/image";
 import { GreenshadesLogo } from "@/components/GreenshadesLogo";
 import { RegistrationForm } from "@/components/RegistrationForm";
 
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "the booth";
 
