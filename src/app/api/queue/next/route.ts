@@ -6,6 +6,11 @@ import {
 } from "@/lib/db";
 import { setSessionCookie } from "@/lib/session";
 
+// Polled every 2s by the booth. Force dynamic so Next doesn't cache the
+// first "empty queue" response and serve it forever.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // Booth station polls this. Returns the current spotlight entry
 // (playing or ready), promoting a waiting entry if the spotlight is
 // empty. Also issues a session cookie tied to the spotlight player so
