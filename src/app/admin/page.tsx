@@ -52,7 +52,7 @@ export default async function AdminPage({
     <main className="min-h-screen bg-gsNavy p-8 text-white">
       <header className="mb-8 flex items-baseline justify-between">
         <div>
-          <h1 className="font-pixel text-2xl text-gsGreen">PAYROLL RUN — ADMIN</h1>
+          <h1 className="font-pixel text-2xl text-gsGreen">PAYROLL RUNNER — ADMIN</h1>
           <p className="mt-1 font-serif text-sm text-white/60">
             {eventName} · slug: <code className="text-gsGreen">{eventSlug}</code>
           </p>

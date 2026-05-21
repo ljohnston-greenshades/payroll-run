@@ -261,8 +261,8 @@ function AttractScreen({
   return (
     <div className="flex h-full flex-col items-stretch gap-6 px-8 py-6 lg:px-12 lg:py-8 xl:px-16">
       <header className="flex items-baseline justify-between">
-        <h1 className="font-pixel text-3xl text-gsGreen lg:text-5xl xl:text-6xl">
-          PAYROLL RUN
+        <h1 className="font-pixel text-2xl text-gsGreen lg:text-4xl xl:text-5xl">
+          PAYROLL RUNNER
         </h1>
         <p className="font-serif text-sm uppercase tracking-[0.25em] text-white/70 lg:text-lg">
           {eventName}

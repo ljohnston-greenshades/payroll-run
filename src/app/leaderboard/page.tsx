@@ -19,8 +19,8 @@ export default async function LeaderboardPage() {
     <main className="flex min-h-[100dvh] flex-col">
       <header className="flex flex-col items-center gap-2 border-b border-gsGreen/30 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-12 md:py-6">
         <GreenshadesLogo className="h-6 w-auto md:h-9" />
-        <h1 className="text-center font-pixel text-base text-gsGreen sm:text-xl md:text-3xl lg:text-4xl">
-          PAYROLL RUN — LEADERBOARD
+        <h1 className="text-center font-pixel text-sm text-gsGreen sm:text-lg md:text-2xl lg:text-3xl">
+          PAYROLL RUNNER — LEADERBOARD
         </h1>
         <div className="font-serif text-xs text-white/70 md:text-lg">
           {eventName}

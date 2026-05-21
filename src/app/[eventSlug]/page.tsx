@@ -66,8 +66,8 @@ export default async function EventLeaderboardPage({
       <header className="flex flex-col items-center gap-2 border-b border-gsGreen/30 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-12 md:py-6">
         <GreenshadesLogo className="h-6 w-auto md:h-9" />
         <div className="flex flex-col items-center">
-          <h1 className="text-center font-pixel text-base text-gsGreen sm:text-xl md:text-3xl lg:text-4xl">
-            PAYROLL RUN — LEADERBOARD
+          <h1 className="text-center font-pixel text-sm text-gsGreen sm:text-lg md:text-2xl lg:text-3xl">
+            PAYROLL RUNNER — LEADERBOARD
           </h1>
           {!isCurrent ? (
             <p className="mt-1 font-serif text-[0.6rem] uppercase tracking-widest text-yellow-300/80 md:text-xs">

@@ -147,14 +147,14 @@ export function drawTitleOverlay(
   // Title block — neon-green glow via canvas shadow blur, pulsing
   // gently so it reads as live signage rather than static text.
   const titleY = isPortrait ? H * 0.1 : H * 0.18;
-  const titleSize = isPortrait ? 26 : 30;
+  const titleSize = isPortrait ? 20 : 24;
   const pulse = 16 + Math.sin(frame * 0.08) * 4;
   ctx.save();
   ctx.shadowColor = Colors.green;
   ctx.shadowBlur = pulse;
-  drawPixelText(ctx, "PAYROLL RUN", W / 2, titleY, titleSize, "#b6ff5a", "center");
+  drawPixelText(ctx, "PAYROLL RUNNER", W / 2, titleY, titleSize, "#b6ff5a", "center");
   ctx.shadowBlur = pulse * 0.6;
-  drawPixelText(ctx, "PAYROLL RUN", W / 2, titleY, titleSize, "#b6ff5a", "center");
+  drawPixelText(ctx, "PAYROLL RUNNER", W / 2, titleY, titleSize, "#b6ff5a", "center");
   ctx.restore();
   const subtitleY = isPortrait ? H * 0.16 : H * 0.27;
   drawPixelText(
