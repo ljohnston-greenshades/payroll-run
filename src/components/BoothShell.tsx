@@ -131,6 +131,23 @@ export function BoothShell({
     enabled: phase === "ready",
   });
 
+  // Keyboard fallback for testing without the arcade controller:
+  // Space/Enter starts the game from READY; Esc skips.
+  useEffect(() => {
+    if (phase !== "ready") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === "Space" || e.code === "Enter") {
+        e.preventDefault();
+        startGame();
+      } else if (e.code === "Escape") {
+        e.preventDefault();
+        skipActive();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase, startGame, skipActive]);
+
   // After a run finishes, GameCanvas fires onGameOver → we wait a beat
   // for the player to read their score, then return to attract (which
   // will pick up the next person in line, or sit on the attract
