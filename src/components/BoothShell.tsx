@@ -53,11 +53,22 @@ export function BoothShell({
         const data = (await res.json()) as QueueNextResponse;
         if (cancelled) return;
         setQueueDepth(data.depth);
-        if (data.entry && data.entry.status === "ready") {
+        if (data.entry?.status === "ready") {
           setActiveEntryId(data.entry.id);
           setActiveScreenName(data.entry.screenName);
           setReadyCountdown(READY_TTL_SECONDS);
           setPhase("ready");
+        } else if (data.entry?.status === "playing") {
+          // Orphaned `playing` row from a previous booth session that
+          // crashed or refreshed mid-game. The server won't promote
+          // anyone new while this row blocks the spotlight, so expire
+          // it client-side and let the next poll pick up the real
+          // next player.
+          fetch("/api/queue/skip", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ entryId: data.entry.id }),
+          }).catch(() => {});
         }
       } catch {
         // Network blip — keep last good state.
