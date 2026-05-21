@@ -11,6 +11,9 @@ import {
 const HANDOFF_SECONDS = 8;
 const FALLBACK_DURATION = 45;
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const token = new URL(req.url).searchParams.get("token");
   if (!token) {
