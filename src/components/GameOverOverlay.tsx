@@ -28,11 +28,12 @@ export function GameOverOverlay({ result, submitting, onRetry, hideControls }: P
           <span>Saving score…</span>
         ) : result?.error ? (
           <span className="text-red-300">Couldn&apos;t save — try again</span>
-        ) : result?.position ? (
+        ) : result?.position && result.personalBest ? (
           <span>
-            Rank #{result.position.toLocaleString()} of{" "}
+            {result.isNewPersonalBest ? "New best · " : "Best "}
+            ${result.personalBest.toLocaleString()} · #
+            {result.position.toLocaleString()} of{" "}
             {result.total?.toLocaleString()}
-            {result.isNewPersonalBest ? " · New best!" : ""}
           </span>
         ) : null}
       </div>
