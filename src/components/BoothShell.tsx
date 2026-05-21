@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import { GameCanvas } from "./GameCanvas";
 import { GreenshadesLogo } from "./GreenshadesLogo";
@@ -292,7 +293,30 @@ function AttractScreen({
           </p>
         </section>
 
-        <section className="flex flex-col items-center justify-center rounded-lg border-2 border-gsGreen bg-gsNavy/70 p-6 text-center lg:p-8">
+        <section className="relative flex flex-col items-center justify-center rounded-lg border-2 border-gsGreen bg-gsNavy/70 p-6 pt-20 text-center lg:p-8 lg:pt-24 xl:pt-28">
+          {/* Flo peeks out from the top edge of the card, anchoring
+              the call-to-action without competing with the QR. The
+              soft pink glow grounds her against the navy background. */}
+          <div className="pointer-events-none absolute -top-16 left-1/2 z-10 -translate-x-1/2 lg:-top-20 xl:-top-24">
+            <div
+              aria-hidden
+              className="absolute inset-0 -z-10 translate-y-4 blur-2xl"
+              style={{
+                background:
+                  "radial-gradient(ellipse 60% 80% at 50% 60%, rgba(255,107,157,0.30), transparent 70%)",
+              }}
+            />
+            <Image
+              src="/flo.png"
+              alt=""
+              width={300}
+              height={388}
+              unoptimized
+              priority
+              className="flo-bounce h-32 w-auto drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)] lg:h-40 xl:h-48"
+              style={{ imageRendering: "pixelated" }}
+            />
+          </div>
           <div className="font-pixel text-lg uppercase tracking-wider text-gsGreen lg:text-2xl">
             Scan to play
           </div>
