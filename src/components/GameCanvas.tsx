@@ -177,6 +177,7 @@ export function GameCanvas({
             result={scoreResult}
             submitting={submitting}
             onRetry={handleRetry}
+            hideControls={mode === "booth"}
           />
         ) : null}
       </div>
