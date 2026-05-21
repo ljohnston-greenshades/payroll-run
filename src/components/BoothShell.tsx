@@ -191,9 +191,9 @@ export function BoothShell({
 
   return (
     <div className="relative z-10 flex h-full flex-col">
+      <BoothHeader eventName={eventName} />
       {phase === "attract" ? (
         <AttractScreen
-          eventName={eventName}
           eventSlug={eventSlug}
           gameUrl={gameUrl}
           depth={queueDepth}
@@ -206,7 +206,7 @@ export function BoothShell({
           secondsLeft={readyCountdown}
         />
       ) : (
-        <div className="flex h-full flex-col items-center justify-center px-4 pb-6 pt-4">
+        <div className="flex flex-1 flex-col items-center justify-center px-4 pb-4 pt-2">
           <GameCanvas
             screenName={activeScreenName ?? undefined}
             mode="booth"
@@ -244,15 +244,30 @@ function CornerQR({ qrUrl }: { qrUrl: string }) {
   );
 }
 
+function BoothHeader({ eventName }: { eventName: string }) {
+  return (
+    <header className="flex items-center justify-between gap-6 px-8 pt-6 lg:px-12 lg:pt-8 xl:px-16">
+      <div className="flex items-center gap-5 lg:gap-7">
+        <GreenshadesLogo className="h-10 w-auto lg:h-14 xl:h-16" />
+        <div className="hidden h-10 w-px bg-gsGreen/30 lg:block xl:h-12" />
+        <h1 className="font-pixel text-2xl text-gsGreen lg:text-4xl xl:text-5xl">
+          PAYROLL RUNNER
+        </h1>
+      </div>
+      <p className="font-serif text-sm uppercase tracking-[0.25em] text-white/70 lg:text-lg">
+        {eventName}
+      </p>
+    </header>
+  );
+}
+
 function AttractScreen({
-  eventName,
   eventSlug,
   gameUrl,
   depth,
   initialEntries,
   initialTotal,
 }: {
-  eventName: string;
   eventSlug: string;
   gameUrl: string;
   depth: number;
@@ -261,20 +276,7 @@ function AttractScreen({
 }) {
   const qrUrl = gameUrl ? `${gameUrl}/?mode=booth` : "";
   return (
-    <div className="flex h-full flex-col items-stretch gap-6 px-8 py-6 lg:px-12 lg:py-8 xl:px-16">
-      <header className="flex items-center justify-between gap-6">
-        <div className="flex items-center gap-5 lg:gap-7">
-          <GreenshadesLogo className="h-8 w-auto lg:h-10 xl:h-12" />
-          <div className="hidden h-10 w-px bg-gsGreen/30 lg:block xl:h-12" />
-          <h1 className="font-pixel text-2xl text-gsGreen lg:text-4xl xl:text-5xl">
-            PAYROLL RUNNER
-          </h1>
-        </div>
-        <p className="font-serif text-sm uppercase tracking-[0.25em] text-white/70 lg:text-lg">
-          {eventName}
-        </p>
-      </header>
-
+    <div className="flex flex-1 flex-col items-stretch gap-6 px-8 pb-6 pt-6 lg:px-12 lg:pb-8 lg:pt-8 xl:px-16">
       <div className="grid flex-1 grid-cols-1 gap-8 lg:grid-cols-[1.5fr,1fr]">
         <section className="flex flex-col rounded-lg border border-gsGreen/30 bg-white/[0.04] p-6 lg:p-8">
           <h2 className="mb-4 font-pixel text-base uppercase tracking-wider text-gsGreen lg:text-xl">
@@ -339,7 +341,7 @@ function ReadyScreen({
   secondsLeft: number;
 }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center px-8 text-center">
+    <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
       <p className="font-pixel text-xs uppercase tracking-[0.4em] text-white/70 lg:text-base">
         You&apos;re up
       </p>
