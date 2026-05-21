@@ -293,31 +293,17 @@ function AttractScreen({
           </p>
         </section>
 
-        <section className="relative flex flex-col items-center justify-center rounded-lg border-2 border-gsGreen bg-gsNavy/70 p-6 pt-20 text-center lg:p-8 lg:pt-24 xl:pt-28">
-          {/* Flo peeks out from the top edge of the card, anchoring
-              the call-to-action without competing with the QR. The
-              soft pink glow grounds her against the navy background. */}
-          <div className="pointer-events-none absolute -top-16 left-1/2 z-10 -translate-x-1/2 lg:-top-20 xl:-top-24">
-            <div
-              aria-hidden
-              className="absolute inset-0 -z-10 translate-y-4 blur-2xl"
-              style={{
-                background:
-                  "radial-gradient(ellipse 60% 80% at 50% 60%, rgba(255,107,157,0.30), transparent 70%)",
-              }}
-            />
-            <Image
-              src="/flo.png"
-              alt=""
-              width={300}
-              height={388}
-              unoptimized
-              priority
-              className="flo-bounce h-32 w-auto drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)] lg:h-40 xl:h-48"
-              style={{ imageRendering: "pixelated" }}
-            />
-          </div>
-          <div className="font-pixel text-lg uppercase tracking-wider text-gsGreen lg:text-2xl">
+        <section className="relative flex flex-col items-center rounded-lg border-2 border-gsGreen bg-gsNavy/70 p-6 text-center lg:p-8">
+          <Image
+            src="/airpods.png"
+            alt="Top 3 scores win AirPods"
+            width={1400}
+            height={1100}
+            unoptimized
+            priority
+            className="w-full max-w-[320px] lg:max-w-[360px] xl:max-w-[420px]"
+          />
+          <div className="mt-4 font-pixel text-lg uppercase tracking-wider text-gsGreen lg:text-2xl">
             Scan to play
           </div>
           <p className="mt-3 font-serif text-sm text-white/85 lg:text-base">
@@ -329,7 +315,7 @@ function AttractScreen({
               <QRCode value={qrUrl} size={220} />
             </div>
           ) : null}
-          <div className="mt-5 font-pixel text-xs uppercase tracking-widest text-white/70 lg:text-sm">
+          <div className="mt-auto pt-5 font-pixel text-xs uppercase tracking-widest text-white/70 lg:text-sm">
             {depth === 0 ? (
               <>No one in line — you&apos;re up first</>
             ) : (
