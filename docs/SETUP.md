@@ -1,4 +1,4 @@
-# Payroll Run — Setup by Scenario
+# Payroll Runner — Setup by Scenario
 
 The same codebase covers four use cases. Pick the right route + env config
 per scenario.

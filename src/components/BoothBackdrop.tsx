@@ -54,7 +54,7 @@ export function BoothHeader({ eventName }: Props) {
         <GreenshadesLogo className="h-9 w-auto lg:h-12 xl:h-14 2xl:h-16" />
         <div className="hidden border-l border-gsGreen/30 pl-5 lg:block xl:pl-8 2xl:pl-10">
           <p className="font-pixel text-[0.6rem] uppercase tracking-[0.3em] text-gsGreen lg:text-xs xl:text-sm 2xl:text-base">
-            Payroll Run
+            Payroll Runner
           </p>
           <p className="mt-1 font-serif text-xs text-white/60 lg:text-sm xl:text-base 2xl:text-xl">
             How long can you keep payroll running?

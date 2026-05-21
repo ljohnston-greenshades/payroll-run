@@ -42,7 +42,7 @@ export async function submitToHubSpot(input: HubSpotRegistration): Promise<boole
     ],
     context: {
       pageUri: GAME_URL,
-      pageName: `Payroll Run — ${input.eventName}`,
+      pageName: `Payroll Runner — ${input.eventName}`,
     },
   };
 

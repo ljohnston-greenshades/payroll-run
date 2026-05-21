@@ -67,8 +67,8 @@ export default async function HomePage({
             </p>
           </div>
 
-          <h1 className="whitespace-nowrap font-pixel text-3xl leading-none text-gsGreen sm:text-4xl md:text-5xl">
-            PAYROLL RUN
+          <h1 className="whitespace-nowrap font-pixel text-2xl leading-none text-gsGreen sm:text-3xl md:text-4xl">
+            PAYROLL RUNNER
           </h1>
           <div className="mx-auto mt-4 h-[3px] w-20 bg-gsGreen md:mx-0" />
           <p className="mb-6 mt-4 font-serif text-base text-white/85 md:text-lg">

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Payroll Run",
+  title: "Payroll Runner",
   description: "How long can you keep payroll running?",
   robots: { index: false, follow: false },
 };

@@ -154,7 +154,7 @@ export function GameCanvas({
           className="block h-full w-full rounded-lg shadow-2xl outline-none touch-none"
           style={{ imageRendering: "pixelated" }}
           tabIndex={0}
-          aria-label="Payroll Run game canvas"
+          aria-label="Payroll Runner game canvas"
         />
         <button
           type="button"
