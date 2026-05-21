@@ -301,9 +301,9 @@ function AttractScreen({
             height={1100}
             unoptimized
             priority
-            className="w-full max-w-[320px] lg:max-w-[360px] xl:max-w-[420px]"
+            className="w-full max-w-[420px] lg:max-w-[480px] xl:max-w-[560px]"
           />
-          <div className="mt-4 font-pixel text-lg uppercase tracking-wider text-gsGreen lg:text-2xl">
+          <div className="mt-10 font-pixel text-lg uppercase tracking-wider text-gsGreen lg:mt-12 lg:text-2xl">
             Scan to play
           </div>
           <p className="mt-3 font-serif text-sm text-white/85 lg:text-base">
