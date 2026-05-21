@@ -83,11 +83,23 @@ export function BoothShell({
 
   useEffect(() => {
     if (phase === "ready" && readyCountdown <= 0) {
+      // Explicitly expire on the server before going back to attract.
+      // Otherwise the next poll can re-serve the same still-`ready`
+      // row before the server's lazy reap catches up, looking like a
+      // flicker between attract and a freshly-restarted countdown.
+      const entryToExpire = activeEntryId;
       setActiveEntryId(null);
       setActiveScreenName(null);
       setPhase("attract");
+      if (entryToExpire) {
+        fetch("/api/queue/skip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ entryId: entryToExpire }),
+        }).catch(() => {});
+      }
     }
-  }, [phase, readyCountdown]);
+  }, [phase, readyCountdown, activeEntryId]);
 
   const startGame = useCallback(async () => {
     if (!activeEntryId) return;
