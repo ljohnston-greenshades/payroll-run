@@ -80,7 +80,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   await markPlayerActiveRunDone(player.id, eventSlug);
 
   const personalBest = await getPersonalBest(player.id, eventSlug);
-  const { position, total } = await getLeaderboardPosition(eventSlug, score);
+  // Rank against the leaderboard reflects the player's *current
+  // standing* (their personal best), not this specific run's score.
+  // Showing the run's rank breaks down on replays — a low replay
+  // score would be "ahead = N (including their own PB)" but "total =
+  // N", producing nonsense like "#12 of 11". Best-rank is always
+  // consistent and matches what Play Again on the phone shows.
+  const { position, total } = await getLeaderboardPosition(
+    eventSlug,
+    personalBest,
+  );
   const isNewPersonalBest = score >= personalBest;
 
   return NextResponse.json({

@@ -89,10 +89,13 @@ export function GameCanvas({
           }
           const data = (await res.json()) as ScoreResult;
           setScoreResult(data);
-          // Top of the leaderboard with at least one prior player =
-          // a true booth record. Fire the celebration.
+          // Top of the leaderboard, this run set the new high, and at
+          // least one other player exists = a true booth record.
+          // isNewPersonalBest is required so we don't refire on every
+          // replay of someone already holding #1.
           if (
             data.position === 1 &&
+            data.isNewPersonalBest &&
             typeof data.total === "number" &&
             data.total > 1
           ) {
