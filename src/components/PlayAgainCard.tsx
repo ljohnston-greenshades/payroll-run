@@ -5,9 +5,17 @@ import { useState } from "react";
 
 interface Props {
   screenName: string;
+  personalBest?: number;
+  personalRank?: number;
+  personalTotal?: number;
 }
 
-export function PlayAgainCard({ screenName }: Props) {
+export function PlayAgainCard({
+  screenName,
+  personalBest = 0,
+  personalRank = 0,
+  personalTotal = 0,
+}: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,12 +48,39 @@ export function PlayAgainCard({ screenName }: Props) {
     router.refresh();
   };
 
+  const hasStats = personalBest > 0 && personalRank > 0 && personalTotal > 0;
+
   return (
     <div className="w-full max-w-md text-center">
       <p className="font-pixel text-xs uppercase tracking-widest text-white/55">
         Welcome back
       </p>
       <p className="mt-2 font-pixel text-3xl text-gsGreen">{screenName}</p>
+
+      {hasStats ? (
+        <div className="mx-auto mt-5 grid max-w-xs grid-cols-2 gap-3 rounded-md border border-gsGreen/30 bg-white/[0.04] p-4">
+          <div>
+            <p className="font-pixel text-[0.55rem] uppercase tracking-widest text-white/55">
+              Your best
+            </p>
+            <p className="mt-1 font-pixel text-lg text-gsGreen">
+              ${personalBest.toLocaleString()}
+            </p>
+          </div>
+          <div>
+            <p className="font-pixel text-[0.55rem] uppercase tracking-widest text-white/55">
+              Your rank
+            </p>
+            <p className="mt-1 font-pixel text-lg text-gsGreen">
+              #{personalRank}
+              <span className="ml-1 text-xs text-white/55">
+                / {personalTotal}
+              </span>
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <p className="mt-5 font-serif text-base text-white/85">
         Ready for another run? Tap below and we&apos;ll put you back in line.
         No need to fill out the form again.

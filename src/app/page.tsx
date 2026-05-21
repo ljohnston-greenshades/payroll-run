@@ -2,7 +2,13 @@ import Image from "next/image";
 import { GreenshadesLogo } from "@/components/GreenshadesLogo";
 import { RegistrationForm } from "@/components/RegistrationForm";
 import { PlayAgainCard } from "@/components/PlayAgainCard";
-import { getCurrentPlayer } from "@/lib/session";
+import {
+  getCurrentPlayer,
+} from "@/lib/session";
+import {
+  getLeaderboardPosition,
+  getPersonalBest,
+} from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +31,21 @@ export default async function HomePage({
   const player = await getCurrentPlayer();
   const showPlayAgain =
     isBoothMode && !!player && player.event_slug === eventSlug;
+
+  // For the Play Again card: their personal best + where that best
+  // ranks in the live leaderboard. Keeps the public board lean (top 20)
+  // while still telling the returning player exactly where they sit.
+  let personalBest = 0;
+  let personalRank = 0;
+  let personalTotal = 0;
+  if (showPlayAgain && player) {
+    personalBest = await getPersonalBest(player.id, eventSlug);
+    if (personalBest > 0) {
+      const ranked = await getLeaderboardPosition(eventSlug, personalBest);
+      personalRank = ranked.position;
+      personalTotal = ranked.total;
+    }
+  }
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-10 md:py-14">
@@ -90,7 +111,12 @@ export default async function HomePage({
           </p>
 
           {showPlayAgain && player ? (
-            <PlayAgainCard screenName={player.screen_name} />
+            <PlayAgainCard
+              screenName={player.screen_name}
+              personalBest={personalBest}
+              personalRank={personalRank}
+              personalTotal={personalTotal}
+            />
           ) : (
             <RegistrationForm />
           )}
