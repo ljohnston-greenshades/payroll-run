@@ -1,11 +1,30 @@
 import Image from "next/image";
 import { GreenshadesLogo } from "@/components/GreenshadesLogo";
 import { RegistrationForm } from "@/components/RegistrationForm";
+import { PlayAgainCard } from "@/components/PlayAgainCard";
+import { getCurrentPlayer } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+interface SearchParams {
+  mode?: string;
+}
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "the booth";
+  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG ?? "";
+  const isBoothMode = searchParams.mode === "booth";
+
+  // Returning player on the booth-QR path? Skip the form (and the
+  // HubSpot resubmission that would come with it) and offer them a
+  // Play Again button instead.
+  const player = await getCurrentPlayer();
+  const showPlayAgain =
+    isBoothMode && !!player && player.event_slug === eventSlug;
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-10 md:py-14">
@@ -56,7 +75,11 @@ export default function HomePage() {
             How long can you keep payroll running?
           </p>
 
-          <RegistrationForm />
+          {showPlayAgain && player ? (
+            <PlayAgainCard screenName={player.screen_name} />
+          ) : (
+            <RegistrationForm />
+          )}
         </div>
       </section>
     </main>
