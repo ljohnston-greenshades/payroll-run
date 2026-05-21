@@ -54,13 +54,23 @@ export default async function HomePage({
             height={388}
             unoptimized
             priority
-            className="flo-bounce drop-shadow-[0_14px_28px_rgba(0,0,0,0.55)]"
+            className={`flo-bounce drop-shadow-[0_14px_28px_rgba(0,0,0,0.55)] ${
+              showPlayAgain ? "h-44 w-auto md:h-72" : ""
+            }`}
             style={{ imageRendering: "pixelated" }}
           />
         </div>
 
-        <div className="flex w-full max-w-md flex-col text-center md:text-left">
-          <div className="mb-6 flex flex-col items-center md:items-start">
+        <div
+          className={`flex w-full max-w-md flex-col ${
+            showPlayAgain ? "text-center" : "text-center md:text-left"
+          }`}
+        >
+          <div
+            className={`mb-6 flex flex-col ${
+              showPlayAgain ? "items-center" : "items-center md:items-start"
+            }`}
+          >
             <GreenshadesLogo className="h-8 w-auto md:h-10" />
             <p className="mt-3 font-serif text-xs uppercase tracking-[0.25em] text-white/70 md:text-sm">
               {eventName}
@@ -70,7 +80,11 @@ export default async function HomePage({
           <h1 className="whitespace-nowrap font-pixel text-2xl leading-none text-gsGreen sm:text-3xl md:text-4xl">
             PAYROLL RUNNER
           </h1>
-          <div className="mx-auto mt-4 h-[3px] w-20 bg-gsGreen md:mx-0" />
+          <div
+            className={`mt-4 h-[3px] w-20 bg-gsGreen ${
+              showPlayAgain ? "mx-auto" : "mx-auto md:mx-0"
+            }`}
+          />
           <p className="mb-6 mt-4 font-serif text-base text-white/85 md:text-lg">
             How long can you keep payroll running?
           </p>

@@ -41,7 +41,7 @@ export function PlayAgainCard({ screenName }: Props) {
   };
 
   return (
-    <div className="w-full max-w-md text-left">
+    <div className="w-full max-w-md text-center">
       <p className="font-pixel text-xs uppercase tracking-widest text-white/55">
         Welcome back
       </p>

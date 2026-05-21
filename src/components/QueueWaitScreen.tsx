@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -29,6 +30,7 @@ function formatEta(seconds: number): string {
 }
 
 export function QueueWaitScreen({ token }: Props) {
+  const router = useRouter();
   const [data, setData] = useState<QueueResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +50,11 @@ export function QueueWaitScreen({ token }: Props) {
         if (cancelled) return;
         setError(null);
         setData(json);
+        // When the run finishes, hop straight to the Play Again screen
+        // so the user doesn't have to re-scan the QR to queue up again.
+        if (json.status === "done") {
+          router.replace("/?mode=booth");
+        }
       } catch {
         if (!cancelled) setError("Connection issue.");
       }
@@ -58,7 +65,7 @@ export function QueueWaitScreen({ token }: Props) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [token]);
+  }, [token, router]);
 
   if (!data && !error) {
     return (
