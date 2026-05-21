@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { GameCanvas } from "./GameCanvas";
+import { GreenshadesLogo } from "./GreenshadesLogo";
 import { LeaderboardTV } from "./LeaderboardTV";
 import { QRCode } from "./QRCode";
 import { useGamepadButtons } from "@/hooks/useGamepadButtons";
@@ -260,10 +261,14 @@ function AttractScreen({
   const qrUrl = gameUrl ? `${gameUrl}/?mode=booth` : "";
   return (
     <div className="flex h-full flex-col items-stretch gap-6 px-8 py-6 lg:px-12 lg:py-8 xl:px-16">
-      <header className="flex items-baseline justify-between">
-        <h1 className="font-pixel text-2xl text-gsGreen lg:text-4xl xl:text-5xl">
-          PAYROLL RUNNER
-        </h1>
+      <header className="flex items-center justify-between gap-6">
+        <div className="flex items-center gap-5 lg:gap-7">
+          <GreenshadesLogo className="h-8 w-auto lg:h-10 xl:h-12" />
+          <div className="hidden h-10 w-px bg-gsGreen/30 lg:block xl:h-12" />
+          <h1 className="font-pixel text-2xl text-gsGreen lg:text-4xl xl:text-5xl">
+            PAYROLL RUNNER
+          </h1>
+        </div>
         <p className="font-serif text-sm uppercase tracking-[0.25em] text-white/70 lg:text-lg">
           {eventName}
         </p>
