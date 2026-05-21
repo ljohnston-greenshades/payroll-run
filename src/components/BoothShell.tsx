@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { GameCanvas } from "./GameCanvas";
 import { LeaderboardTV } from "./LeaderboardTV";
 import { QRCode } from "./QRCode";
@@ -184,6 +185,8 @@ export function BoothShell({
     }, 8_000);
   }, []);
 
+  const qrUrl = gameUrl ? `${gameUrl}/?mode=booth` : "";
+
   return (
     <div className="relative z-10 flex h-full flex-col">
       {phase === "attract" ? (
@@ -210,6 +213,31 @@ export function BoothShell({
           />
         </div>
       )}
+
+      {/* Persistent corner QR during ready / playing / gameover so
+          spectators can join the line while someone is mid-run. The
+          attract screen has its own giant QR, no need to double up. */}
+      {phase !== "attract" && qrUrl ? <CornerQR qrUrl={qrUrl} /> : null}
+    </div>
+  );
+}
+
+function CornerQR({ qrUrl }: { qrUrl: string }) {
+  return (
+    <div className="pointer-events-none absolute bottom-4 right-4 z-20 flex items-center gap-3 rounded-md border border-gsGreen/40 bg-gsNavy/85 p-3 shadow-lg shadow-black/40 backdrop-blur">
+      <div className="text-right font-pixel text-[0.65rem] uppercase tracking-widest text-gsGreen">
+        <div>Get in line</div>
+        <div className="mt-1 text-white/60">scan to play</div>
+      </div>
+      <div className="rounded bg-white p-2">
+        <QRCodeSVG
+          value={qrUrl}
+          size={100}
+          bgColor="#ffffff"
+          fgColor="#062a47"
+          level="M"
+        />
+      </div>
     </div>
   );
 }
