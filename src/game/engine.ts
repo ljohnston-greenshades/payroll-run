@@ -704,10 +704,10 @@ export class Game {
       spawnFloatingText(
         this.floatingTexts,
         W / 2,
-        H / 2 - 40,
+        H / 2 - 50,
         "PROMOTED!",
         Colors.yellow,
-        14,
+        22,
       );
       spawnFloatingText(
         this.floatingTexts,
@@ -715,9 +715,9 @@ export class Game {
         H / 2 - 20,
         tier.title.toUpperCase(),
         Colors.green,
-        10,
+        14,
       );
-      spawnParticles(this.particles, W / 2, H / 2, Colors.yellow, 24);
+      spawnParticles(this.particles, W / 2, H / 2, Colors.yellow, 36);
       this.sound.promotion();
     }
   }
@@ -774,8 +774,8 @@ export class Game {
         ctx,
         `${this.combo}x COMBO!`,
         this.player.x + 50,
-        this.player.y - this.player.h - 20,
-        10,
+        this.player.y - this.player.h - 26,
+        16,
         Colors.yellow,
         "left",
       );
