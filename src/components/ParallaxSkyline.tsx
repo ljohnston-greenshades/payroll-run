@@ -50,7 +50,9 @@ function generateBuildings(
       windowCols: Math.max(2, Math.floor(w / 24)),
       windowRows: Math.max(2, Math.floor(h / 30)),
     });
-    x += w + 4 + Math.floor(rand() * 16);
+    // Sparse spacing: 80–220px between buildings reads as a real
+    // skyline with sky between each tower, not a solid wall.
+    x += w + 80 + Math.floor(rand() * 140);
     if (x > spread) break;
   }
   return buildings;
@@ -135,11 +137,11 @@ function BuildingLayer({
 
 export function ParallaxSkyline() {
   const farBuildings = useMemo(
-    () => generateBuildings(13, FAR_PALETTE, 24, 1800, 80, 160),
+    () => generateBuildings(13, FAR_PALETTE, 12, 2400, 80, 160),
     [],
   );
   const nearBuildings = useMemo(
-    () => generateBuildings(29, NEAR_PALETTE, 18, 1600, 120, 220),
+    () => generateBuildings(29, NEAR_PALETTE, 9, 2200, 120, 220),
     [],
   );
 
@@ -161,17 +163,17 @@ export function ParallaxSkyline() {
       />
       <BuildingLayer
         buildings={farBuildings}
-        width={1800}
+        width={2400}
         height={160}
-        durationSec={180}
+        durationSec={220}
         opacity={0.32}
         bottomOffset={20}
       />
       <BuildingLayer
         buildings={nearBuildings}
-        width={1600}
+        width={2200}
         height={220}
-        durationSec={110}
+        durationSec={140}
         opacity={0.42}
         bottomOffset={0}
       />
