@@ -6,6 +6,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { GameCanvas } from "./GameCanvas";
 import { GreenshadesLogo } from "./GreenshadesLogo";
 import { LeaderboardTV } from "./LeaderboardTV";
+import { ParallaxSkyline } from "./ParallaxSkyline";
 import { QRCode } from "./QRCode";
 import { useGamepadButtons } from "@/hooks/useGamepadButtons";
 import type { LeaderboardEntry } from "@/lib/db";
@@ -282,7 +283,8 @@ function AttractScreen({
 }) {
   const qrUrl = gameUrl ? `${gameUrl}/?mode=booth` : "";
   return (
-    <div className="flex flex-1 flex-col items-stretch gap-6 px-8 pb-6 pt-6 lg:px-12 lg:pb-8 lg:pt-8 xl:px-16">
+    <div className="relative flex flex-1 flex-col items-stretch gap-6 px-8 pb-6 pt-6 lg:px-12 lg:pb-8 lg:pt-8 xl:px-16">
+      <ParallaxSkyline />
       <div className="grid flex-1 grid-cols-1 gap-8 lg:grid-cols-[1.5fr,1fr]">
         <section className="flex flex-col rounded-lg border border-gsGreen/30 bg-white/[0.04] p-6 lg:p-8">
           <h2 className="mb-4 font-pixel text-base uppercase tracking-wider text-gsGreen lg:text-xl">

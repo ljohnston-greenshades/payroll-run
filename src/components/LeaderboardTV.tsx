@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { LeaderboardEntry } from "@/lib/db";
 
 const POLL_INTERVAL_MS = 10_000;
 const HIGHLIGHT_DURATION_MS = 5_000;
+const SHUFFLE_DURATION_MS = 700;
 const MEDALS = ["🏆", "🥈", "🥉"];
 
 interface Props {
@@ -27,6 +28,40 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug }: Props
   const [total, setTotal] = useState(initialTotal);
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set());
   const previousKeys = useRef(new Set(initialEntries.map(entryKey)));
+
+  // FLIP refs — track each row's previous top so we can animate the
+  // delta when rankings shuffle. Keyed by screen_name (stable per
+  // player) so a player who improves their PB keeps the same row
+  // identity and animates from old rank to new rank.
+  const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
+  const lastTops = useRef<Map<string, number>>(new Map());
+
+  useLayoutEffect(() => {
+    const liveScreenNames = new Set<string>();
+    rowRefs.current.forEach((el, screenName) => {
+      liveScreenNames.add(screenName);
+      const currentTop = el.offsetTop;
+      const prevTop = lastTops.current.get(screenName);
+      if (prevTop !== undefined && prevTop !== currentTop) {
+        const dy = prevTop - currentTop;
+        el.style.transition = "none";
+        el.style.transform = `translateY(${dy}px)`;
+        // Force a synchronous reflow so the browser actually paints
+        // the offset before we animate back to 0.
+        void el.getBoundingClientRect();
+        requestAnimationFrame(() => {
+          el.style.transition = `transform ${SHUFFLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+          el.style.transform = "";
+        });
+      }
+      lastTops.current.set(screenName, currentTop);
+    });
+    // Drop refs for rows that left the visible list so the map
+    // doesn't grow forever.
+    for (const key of Array.from(lastTops.current.keys())) {
+      if (!liveScreenNames.has(key)) lastTops.current.delete(key);
+    }
+  }, [entries]);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +142,13 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug }: Props
             const isHighlight = highlighted.has(key);
             return (
               <tr
-                key={key}
+                // Stable per-player key keeps row identity across
+                // score updates, so FLIP can animate the slide.
+                key={entry.screen_name}
+                ref={(el) => {
+                  if (el) rowRefs.current.set(entry.screen_name, el);
+                  else rowRefs.current.delete(entry.screen_name);
+                }}
                 className={`border-b border-white/5 transition-colors duration-700 ${
                   isHighlight ? "bg-gsGreen/30" : ""
                 }`}
