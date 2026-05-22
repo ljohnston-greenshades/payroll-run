@@ -248,7 +248,13 @@ function BoothHeader({ eventName }: { eventName: string }) {
   return (
     <header className="flex items-center justify-between gap-6 px-8 pt-6 lg:px-12 lg:pt-8 xl:px-16">
       <div className="flex items-center gap-5 lg:gap-7">
-        <GreenshadesLogo className="h-10 w-auto lg:h-14 xl:h-16" />
+        {/* pb-X compensates for the "g" descender in the Greenshades
+            wordmark — without it the SVG's geometric center sits a
+            touch higher than the pixel font's optical center, making
+            the two read as not-quite on the same line. */}
+        <div className="pb-1 lg:pb-1.5 xl:pb-2">
+          <GreenshadesLogo className="h-10 w-auto lg:h-14 xl:h-16" />
+        </div>
         <div className="hidden h-10 w-px bg-gsGreen/30 lg:block xl:h-12" />
         <h1 className="font-pixel text-2xl text-gsGreen lg:text-4xl xl:text-5xl">
           PAYROLL RUNNER
