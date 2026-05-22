@@ -30,6 +30,14 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug }: Props
 
   useEffect(() => {
     let cancelled = false;
+    // The first poll on mount reseeds against the live state — the
+    // server-rendered `initialEntries` snapshot may be stale (in
+    // particular, /booth unmounts and remounts this component between
+    // games and the initial snapshot can be many minutes old by then).
+    // Diffing against that stale baseline would flash every change
+    // that's happened since the page first loaded, lighting up rows
+    // that aren't actually new.
+    let isFirstPoll = true;
     const url = `/api/leaderboard?event=${encodeURIComponent(eventSlug)}`;
     const tick = async () => {
       try {
@@ -39,6 +47,13 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug }: Props
         if (cancelled) return;
 
         const incoming = new Set(data.entries.map(entryKey));
+        if (isFirstPoll) {
+          previousKeys.current = incoming;
+          setEntries(data.entries);
+          setTotal(data.total);
+          isFirstPoll = false;
+          return;
+        }
         const fresh = new Set<string>();
         for (const key of incoming) {
           if (!previousKeys.current.has(key)) fresh.add(key);

@@ -73,6 +73,10 @@ export interface GameOptions {
   sound?: boolean;
   // Player's screen name, drawn in the canvas top-left HUD.
   screenName?: string;
+  // Hide the session BEST line and retry prompt on the game-over
+  // canvas overlay. Used by booth mode where each game is a fresh
+  // component mount and retry is automated.
+  hideSessionBest?: boolean;
 }
 
 const OBSTACLE_TYPES: ObstacleType[] = ["tax", "deadline", "garnishment"];
@@ -824,6 +828,7 @@ export class Game {
         isNewHighScore,
         this.frame,
         this.gameOverLockoutFrames > 0,
+        this.options.hideSessionBest ?? false,
       );
     }
 
