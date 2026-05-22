@@ -400,6 +400,10 @@ export function drawGameOverOverlay(
   isNewHighScore: boolean,
   frame: number,
   inputLocked = false,
+  // Hide the session BEST + retry prompt — used in booth mode, where
+  // each game is a fresh component mount (session BEST always equals
+  // the just-played score, and retry is automated).
+  hideSessionBest = false,
 ): void {
   ctx.fillStyle = "rgba(6,42,71,0.92)";
   ctx.fillRect(0, 0, W, H);
@@ -413,18 +417,20 @@ export function drawGameOverOverlay(
     Colors.green,
     "center",
   );
-  if (isNewHighScore && hiScore > 0) {
+  if (!hideSessionBest && isNewHighScore && hiScore > 0) {
     drawPixelText(ctx, "NEW HIGH SCORE!", W / 2, H * 0.5, 10, Colors.yellow, "center");
   }
-  drawPixelText(
-    ctx,
-    `BEST: $${hiScore.toLocaleString()}`,
-    W / 2,
-    H * 0.57,
-    10,
-    Colors.warmGray,
-    "center",
-  );
+  if (!hideSessionBest) {
+    drawPixelText(
+      ctx,
+      `BEST: $${hiScore.toLocaleString()}`,
+      W / 2,
+      H * 0.57,
+      10,
+      Colors.warmGray,
+      "center",
+    );
+  }
   drawPixelText(
     ctx,
     `LEVEL: ${rankFor(score)}`,
@@ -434,7 +440,7 @@ export function drawGameOverOverlay(
     Colors.sage,
     "center",
   );
-  if (!inputLocked && Math.sin(frame * 0.06) > 0) {
+  if (!hideSessionBest && !inputLocked && Math.sin(frame * 0.06) > 0) {
     drawPixelText(
       ctx,
       "TAP OR PRESS SPACE TO RETRY",

@@ -92,11 +92,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   );
   const isNewPersonalBest = score >= personalBest;
 
+  // The "new booth record" celebration is reserved for when this run
+  // takes the #1 spot overall. The unambiguous check: just-played
+  // score is strictly greater than the highest score any OTHER player
+  // has ever scored at this event. (We're already in scores table
+  // after insertScore, so MAX of others' scores excludes this run.)
+  const { sql: rawSql } = await import("@vercel/postgres");
+  const { rows: otherRows } = await rawSql<{ top: number | null }>`
+    SELECT MAX(score)::int AS top
+    FROM scores
+    WHERE event_slug = ${eventSlug} AND player_id != ${player.id}
+  `;
+  const otherTopScore = otherRows[0]?.top ?? 0;
+  const isNewBoothRecord = score > otherTopScore && total > 1;
+
   return NextResponse.json({
     ok: true,
     position,
     total,
     personalBest,
     isNewPersonalBest,
+    isNewBoothRecord,
   });
 }

@@ -39,6 +39,10 @@ export function LeaderboardSidePanel({
 
   useEffect(() => {
     let cancelled = false;
+    // First poll just reseeds — see LeaderboardTV for the same fix
+    // and explanation. Avoids flashing stale-since-page-load rows
+    // when this component remounts mid-session.
+    let isFirstPoll = true;
     const url = `/api/leaderboard?event=${encodeURIComponent(eventSlug)}`;
     const tick = async () => {
       try {
@@ -48,6 +52,13 @@ export function LeaderboardSidePanel({
         if (cancelled) return;
 
         const incoming = new Set(data.entries.map(entryKey));
+        if (isFirstPoll) {
+          previousKeys.current = incoming;
+          setEntries(data.entries);
+          setTotal(data.total);
+          isFirstPoll = false;
+          return;
+        }
         const fresh = new Set<string>();
         for (const key of incoming) {
           if (!previousKeys.current.has(key)) fresh.add(key);

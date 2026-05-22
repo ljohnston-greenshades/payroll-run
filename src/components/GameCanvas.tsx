@@ -60,6 +60,7 @@ export function GameCanvas({
     const game = new Game(canvas, {
       sound: initialSoundOn,
       screenName,
+      hideSessionBest: mode === "booth",
       onPlayStart: () => {
         setGameOverInfo(null);
         setScoreResult(null);
@@ -89,16 +90,10 @@ export function GameCanvas({
           }
           const data = (await res.json()) as ScoreResult;
           setScoreResult(data);
-          // Top of the leaderboard, this run set the new high, and at
-          // least one other player exists = a true booth record.
-          // isNewPersonalBest is required so we don't refire on every
-          // replay of someone already holding #1.
-          if (
-            data.position === 1 &&
-            data.isNewPersonalBest &&
-            typeof data.total === "number" &&
-            data.total > 1
-          ) {
+          // Celebrate only when the server confirms this run produced
+          // a new #1 — i.e., the just-played score beat every other
+          // player's best at this event.
+          if (data.isNewBoothRecord) {
             setNewRecordInfo(info);
             gameRef.current?.celebrateNewRecord();
           }
@@ -178,6 +173,7 @@ export function GameCanvas({
         {gameOverInfo ? (
           <GameOverOverlay
             result={scoreResult}
+            runScore={gameOverInfo.score}
             submitting={submitting}
             onRetry={handleRetry}
             hideControls={mode === "booth"}
