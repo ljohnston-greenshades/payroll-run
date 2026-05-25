@@ -1,6 +1,56 @@
 import { sql } from "@vercel/postgres";
 import { randomUUID } from "node:crypto";
 
+// ── Events ─────────────────────────────────────────────────────────────
+
+export interface Event {
+  slug: string;
+  name: string;
+  created_at: Date;
+  archived_at: Date | null;
+}
+
+export async function getEvent(slug: string): Promise<Event | null> {
+  const { rows } = await sql<Event>`
+    SELECT * FROM events WHERE slug = ${slug} LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
+export async function listActiveEvents(): Promise<Event[]> {
+  const { rows } = await sql<Event>`
+    SELECT * FROM events
+    WHERE archived_at IS NULL
+    ORDER BY created_at DESC
+  `;
+  return rows;
+}
+
+export async function listAllEvents(): Promise<Event[]> {
+  const { rows } = await sql<Event>`
+    SELECT * FROM events
+    ORDER BY archived_at NULLS FIRST, created_at DESC
+  `;
+  return rows;
+}
+
+export async function createEvent(slug: string, name: string): Promise<Event> {
+  const { rows } = await sql<Event>`
+    INSERT INTO events (slug, name)
+    VALUES (${slug}, ${name})
+    RETURNING *
+  `;
+  return rows[0];
+}
+
+export async function archiveEvent(slug: string): Promise<void> {
+  await sql`UPDATE events SET archived_at = NOW() WHERE slug = ${slug}`;
+}
+
+export async function unarchiveEvent(slug: string): Promise<void> {
+  await sql`UPDATE events SET archived_at = NULL WHERE slug = ${slug}`;
+}
+
 export interface Player {
   id: string;
   first_name: string;

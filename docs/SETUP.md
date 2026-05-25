@@ -1,185 +1,133 @@
-# Payroll Runner — Setup by Scenario
+# Payroll Runner — Setup
 
-The same codebase covers four use cases. Pick the right route + env config
-per scenario.
+This is a multi-event booth-experience codebase. The flow is:
 
----
-
-## Quick reference
-
-| Scenario | URL the visitor sees | URL the booth/page renders | Registration? | Scoring? |
-|---|---|---|---|---|
-| Booth with single TV + controller | (their phone) | `/booth` on the laptop | Yes, on phone | Yes |
-| Booth with self-serve tablet | `/` then `/play` | tablet | Yes, on tablet | Yes |
-| Social contest / giveaway | `/?event=<slug>` | n/a | Yes | Yes (to that event) |
-| 404 page / embed | n/a | wherever you mount `<GameCanvas mode="casual" />` | No | No |
+1. Create the event in `/admin` (once per conference).
+2. Point the booth station's Chrome to `/booth/<slug>` and run it kiosked.
+3. Attendees scan the on-screen QR, register on their phones at `/<slug>`,
+   wait in line, and play one run per turn.
 
 ---
 
-## Scenario 1 — Booth with single TV + custom controller (queue flow)
+## Quick reference — URLs
 
-This is the new flow for shows where the only display is the booth TV and
-the play surface is the 2-button arcade controller.
+| URL | What it serves |
+|---|---|
+| `/` | Event-neutral marketing landing; lists active events |
+| `/<slug>` | Event-scoped registration page (target of the booth QR) |
+| `/booth/<slug>` | Booth TV display (attract → ready → playing → game over) |
+| `/leaderboard/<slug>` | Public leaderboard archive view |
+| `/admin?key=…` | Admin (players, scores, HubSpot retries) |
+| `/admin/events?key=…` | Create / archive events |
+| `/queue/<token>` | Phone-side "you're in line" wait page |
 
-**Hardware:**
-- Laptop / Mac Mini under the table, HDMI to TV
-- Custom 2-button controller (B0 = Jump, B1 = Duck) on USB
-- TV showing the laptop's Chrome window in kiosk mode
-
-**Per-event setup (one time, ~5 min):**
-
-1. In Vercel → project → Settings → Environment Variables, set for **Production**:
-   - `NEXT_PUBLIC_EVENT_SLUG` = e.g. `hr-tech-2026`
-   - `NEXT_PUBLIC_EVENT_NAME` = e.g. `HR Tech 2026`
-   - `NEXT_PUBLIC_GAME_URL` = the live URL (e.g. `https://payrollrun.greenshades.com`)
-2. Redeploy from Vercel so the new env vars take effect.
-3. Apply the queue migration once (only if you haven't already for this DB):
-   open Neon SQL editor and paste the contents of `sql/004-play-queue.sql`,
-   then run.
-
-**Day-of setup at the booth:**
-
-1. Plug the controller into the laptop's USB port.
-2. Open Chrome on the laptop, navigate to `https://payrollrun.greenshades.com/booth`.
-3. Press F11 (or `cmd+ctrl+F` on Mac) for full-screen.
-4. Press B0 once on the controller to wake the Gamepad API.
-5. You should see the **attract screen**: leaderboard on the left, QR code
-   on the right.
-
-**What attendees do:**
-
-1. Walk up, see the QR code on the TV.
-2. Scan it with their phone — they get the registration form.
-3. Fill in name/email/company/screen name on their own phone, hit submit.
-4. Their phone shows their queue position and estimated wait. The TV
-   updates "X in line" in real time.
-5. When their turn comes, the TV shows their screen name in giant text:
-   "FlamingoKing — Press JUMP to begin." Their phone simultaneously says
-   "YOU'RE UP! Walk to the booth."
-6. They press B0 (Jump). The game starts.
-7. After they die or beat their record, the TV shows the game-over
-   overlay for a few seconds, then returns to attract mode. If someone
-   else is in line, they're promoted automatically.
-
-**Skip a no-show:** hold B0 and B1 together for ~1.5s on the ready screen.
-The TV advances to the next person in line.
-
-**Replay:** by design, replay only happens when no one is behind them in
-the queue. (We can revisit this if needed.)
+Legacy `/booth` (no slug) still redirects to whichever event is in
+`NEXT_PUBLIC_EVENT_SLUG` for backwards compatibility with the original
+test setup. Once everyone is on slugged URLs that file can be removed.
 
 ---
 
-## Scenario 2 — Booth with self-serve tablet (existing flow, unchanged)
+## Day-one setup (one time)
 
-For shows where attendees walk up to a tablet and play right there.
-**This is exactly what shipped before — nothing has changed.**
-
-1. Same env vars as Scenario 1 (`NEXT_PUBLIC_EVENT_SLUG`, `NEXT_PUBLIC_EVENT_NAME`).
-2. Open the tablet to `https://payrollrun.greenshades.com/` for self-serve
-   register-and-play.
-3. If you have a second screen, open `/play?board=side` on the tablet to
-   show a side leaderboard alongside the game canvas.
-
----
-
-## Scenario 3 — Social contest / external giveaway
-
-"Play for AirPods, top score wins." This is just a separate event slug;
-no code changes needed.
-
-1. Decide on a slug, e.g. `airpods-giveaway-jan-2026`.
-2. Either:
-   - Deploy a **separate Vercel project / preview deployment** with that
-     slug as `NEXT_PUBLIC_EVENT_SLUG`, OR
-   - Reuse the existing deployment and update env vars when the contest
-     starts (this swaps the production event — only do this between
-     conferences).
-3. Share the URL on social: `https://payrollrun.greenshades.com/?event=airpods-giveaway-jan-2026`
-   (note: today the registration form reads `NEXT_PUBLIC_EVENT_SLUG`
-   from server env, so the `?event=` query param is informational. For a
-   true multi-tenant setup, run a separate deployment per contest.)
-4. View results at `/airpods-giveaway-jan-2026` (historical leaderboard
-   archive route already exists).
-5. Pick winner from the leaderboard table after the contest closes.
-
-**Tip:** for "come to booth #107" cross-promotion, link to the booth
-event slug so social plays count toward the same leaderboard as the
-in-booth players.
-
----
-
-## Scenario 4 — Embed in another page (404 / marketing)
-
-For tributes (Chrome dino on a 404 page) or marketing fun, mount the
-game with no registration or score submission.
-
-```tsx
-import { GameCanvas } from "@/components/GameCanvas";
-
-export default function NotFoundPage() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <h1 className="text-2xl font-bold">404 — Page not found</h1>
-      <p className="mt-2 text-white/70">
-        Looks like you wandered off the path. Want to keep running?
-      </p>
-      <div className="mt-8 w-full max-w-2xl">
-        <GameCanvas mode="casual" />
-      </div>
-      <a href="https://payrollrun.greenshades.com/" className="mt-6 underline">
-        Play the real version →
-      </a>
-    </div>
-  );
-}
-```
-
-**What "casual" mode does:**
-
-- Skips `/api/game-start` (no server session needed).
-- Skips `/api/score` (nothing is recorded).
-- No registration prompt.
-- Otherwise identical gameplay (keyboard, touch, gamepad all work).
-
----
-
-## Per-event env var cheatsheet
+In Vercel → Production env vars:
 
 ```env
-# Production env vars in Vercel.
-# Change ONLY these two when moving from one event to the next:
-NEXT_PUBLIC_EVENT_SLUG=hr-tech-2026          # used as event_slug everywhere
-NEXT_PUBLIC_EVENT_NAME=HR Tech 2026          # display name
-NEXT_PUBLIC_GAME_URL=https://payrollrun.greenshades.com   # for QR code
-
-# Set once, rarely changes:
+NEXT_PUBLIC_GAME_URL=https://payrollrunner.com   # used for QR generation
+NEXT_PUBLIC_EVENT_SLUG=test-event-2026           # legacy fallback only
+NEXT_PUBLIC_EVENT_NAME=Test Event 2026           # legacy fallback only
 HUBSPOT_PORTAL_ID=24081706
 HUBSPOT_GAME_FORM_ID=...
+ADMIN_SECRET=…
+POSTGRES_URL=…
 UTM_MEDIUM=event
 UTM_CAMPAIGN=payroll-run-game
-ADMIN_SECRET=...
-POSTGRES_URL=...
 ```
+
+Run `sql/005-events.sql` in Neon (the migration also seeds the existing
+test event row so nothing breaks during the migration).
+
+---
+
+## Spinning up a new event
+
+1. Open `https://payrollrunner.com/admin/events?key=<ADMIN_SECRET>`
+2. Fill in:
+   - **Event name** → e.g. "Bullhorn Engage 2026" (the slug field auto-suggests)
+   - **URL slug** → e.g. `bullhorn-engage-2026`
+3. Click **Create Event**.
+
+That's it. `https://payrollrunner.com/booth/bullhorn-engage-2026` is now
+live. No redeploy, no env var edit.
+
+---
+
+## At the booth (per event)
+
+1. Plug the controller into the laptop's USB port.
+2. Open Chrome to `https://payrollrunner.com/booth/<slug>`.
+3. F11 for full-screen.
+4. Press B0 once on the controller to wake the Gamepad API.
+5. The attract screen should show the leaderboard for that event and a
+   QR code encoding `https://payrollrunner.com/<slug>?mode=booth`.
+
+Attendees scan the QR → register on their own phones → land on the
+queue wait page → are called up one at a time on the TV → press JUMP →
+play one run → repeat.
+
+---
+
+## Archiving an event
+
+Open `/admin/events?key=…` → click **Archive** on the event row.
+
+What happens:
+- The event still has its own archive leaderboard at `/leaderboard/<slug>` (existing scores remain).
+- New registrations on `/<slug>` are rejected with an "event closed" message.
+- `/booth/<slug>` still renders the historical leaderboard but the queue stops promoting new players.
+- The event drops off the home page's "Where to find us" list.
+
+Re-open the event later via **Unarchive** if needed.
+
+---
+
+## Switching event scopes in the admin
+
+The admin (`/admin?key=…`) shows the data for one event at a time.
+A dropdown in the header (visible when 2+ active events exist) lets
+you switch which event you're viewing leads / scores for.
+
+The CSV export and "Retry HubSpot" button both respect the currently-
+selected event.
+
+---
+
+## Multi-event scenarios
+
+The old `mode="casual"` GameCanvas prop still exists for future 404 /
+marketing embeds — see `docs/archive/self-serve-flow/` for reference.
+The events motion is the primary flow now; casual mode is dormant.
 
 ---
 
 ## Troubleshooting
 
 **TV doesn't see the controller.** Press any button once after Chrome
-opens — browsers gate the Gamepad API behind a user gesture. If B0/B1
-still don't map correctly, the encoder may be wiring them to different
-indices. We can swap indices in `src/game/input.ts`.
+opens — browsers gate the Gamepad API behind a user gesture.
 
-**Phone is stuck on "Loading your spot."** Check the laptop console
-in Chrome DevTools — likely the `/api/queue/me` request is failing.
-Verify `POSTGRES_URL` is set and the `play_queue` table exists.
+**Phone is stuck on "Loading your spot."** Open the booth's DevTools
+console and check whether `/api/queue/me` is succeeding. If 404, the
+queue token doesn't match any row — usually means the player's session
+was wiped or the event was archived.
 
-**Queue is stuck on an old player.** Hold B0+B1 on the ready screen
-to skip. Or open `/admin?key=<ADMIN_SECRET>` and clear stale entries
-manually.
+**Queue stuck on an old player.** Press Esc on the booth laptop (or
+hold B0+B1 on the controller) to skip. Or clear stale rows via:
 
-**ETA looks wildly off.** ETAs are based on a rolling 20-game average,
-so the first few games at a new event use a fallback of 45 seconds.
-After 3+ games at the event, ETA will track reality. If it's still off
-after that, check that durations are being recorded correctly in the
-`scores` table.
+```sql
+UPDATE play_queue
+SET status = 'expired'
+WHERE event_slug = '<slug>' AND status IN ('ready', 'playing');
+```
+
+**ETA looks wildly off.** ETAs use a rolling 20-game average per event,
+with a 45s fallback before there are ≥3 completed runs. After a few
+real games the estimate locks in.

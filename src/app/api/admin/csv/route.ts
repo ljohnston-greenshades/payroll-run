@@ -28,9 +28,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!isValidAdminKey(key)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG;
+  const eventSlug =
+    req.nextUrl.searchParams.get("event") ??
+    process.env.NEXT_PUBLIC_EVENT_SLUG;
   if (!eventSlug) {
-    return NextResponse.json({ error: "event_slug_missing" }, { status: 500 });
+    return NextResponse.json({ error: "event_slug_missing" }, { status: 400 });
   }
 
   const players = await getAllPlayersWithStats(eventSlug);

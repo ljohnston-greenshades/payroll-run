@@ -52,7 +52,10 @@ export function BoothShell({
     let cancelled = false;
     const tick = async () => {
       try {
-        const res = await fetch("/api/queue/next", { cache: "no-store" });
+        const res = await fetch(
+          `/api/queue/next?event=${encodeURIComponent(eventSlug)}`,
+          { cache: "no-store" },
+        );
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as QueueNextResponse;
         if (cancelled) return;
@@ -84,7 +87,7 @@ export function BoothShell({
       cancelled = true;
       clearInterval(id);
     };
-  }, [phase]);
+  }, [phase, eventSlug]);
 
   // Ready-phase countdown. When it hits zero, server will already have
   // expired the entry on its next poll; we just bail back to attract.
@@ -188,7 +191,9 @@ export function BoothShell({
     }, 8_000);
   }, []);
 
-  const qrUrl = gameUrl ? `${gameUrl}/?mode=booth` : "";
+  const qrUrl = gameUrl
+    ? `${gameUrl}/${encodeURIComponent(eventSlug)}?mode=booth`
+    : "";
 
   return (
     <div className="relative z-10 flex h-full flex-col">
@@ -281,7 +286,9 @@ function AttractScreen({
   initialEntries: LeaderboardEntry[];
   initialTotal: number;
 }) {
-  const qrUrl = gameUrl ? `${gameUrl}/?mode=booth` : "";
+  const qrUrl = gameUrl
+    ? `${gameUrl}/${encodeURIComponent(eventSlug)}?mode=booth`
+    : "";
   return (
     <div className="relative flex flex-1 flex-col items-stretch gap-6 px-8 pb-6 pt-6 lg:px-12 lg:pb-8 lg:pt-8 xl:px-16">
       <ParallaxSkyline />

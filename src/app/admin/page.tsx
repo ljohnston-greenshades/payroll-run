@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isValidAdminKey } from "@/lib/admin";
 import {
   getAllPlayersWithStats,
   getEventStats,
   getRecentScores,
+  listActiveEvents,
   type PlayerWithStats,
   type RecentScore,
 } from "@/lib/db";
@@ -14,6 +16,7 @@ export const revalidate = 0;
 
 interface SearchParams {
   key?: string;
+  event?: string;
 }
 
 // Score-per-second rate that flags an entry as worth a manual look.
@@ -31,12 +34,30 @@ export default async function AdminPage({
   }
   const adminKey = searchParams.key as string;
 
-  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG ?? "";
-  const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? eventSlug;
+  // Event scoping: pick the slug from the ?event=... query param if
+  // present, else fall back to the env-var default for backwards
+  // compatibility. The events row carries the display name.
+  const activeEvents = await listActiveEvents();
+  const requestedSlug =
+    searchParams.event ?? process.env.NEXT_PUBLIC_EVENT_SLUG ?? activeEvents[0]?.slug ?? "";
+  const eventSlug = requestedSlug;
+  const matchedEvent = activeEvents.find((e) => e.slug === eventSlug);
+  const eventName =
+    matchedEvent?.name ?? process.env.NEXT_PUBLIC_EVENT_NAME ?? eventSlug;
   if (!eventSlug) {
     return (
-      <main className="p-12">
-        <p className="text-red-300">NEXT_PUBLIC_EVENT_SLUG missing.</p>
+      <main className="p-12 text-white">
+        <p className="text-red-300">No events yet.</p>
+        <p className="mt-2 text-sm text-white/60">
+          Create one at{" "}
+          <Link
+            href={`/admin/events?key=${encodeURIComponent(adminKey)}`}
+            className="text-gsGreen underline"
+          >
+            /admin/events
+          </Link>
+          .
+        </p>
       </main>
     );
   }
@@ -50,22 +71,54 @@ export default async function AdminPage({
 
   return (
     <main className="min-h-screen bg-gsNavy p-8 text-white">
-      <header className="mb-8 flex items-baseline justify-between">
+      <header className="mb-8 flex flex-wrap items-baseline justify-between gap-4">
         <div>
           <h1 className="font-pixel text-2xl text-gsGreen">PAYROLL RUNNER — ADMIN</h1>
           <p className="mt-1 font-serif text-sm text-white/60">
             {eventName} · slug: <code className="text-gsGreen">{eventSlug}</code>
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {activeEvents.length > 1 ? (
+            <form className="flex items-center gap-2" method="GET" action="/admin">
+              <input type="hidden" name="key" value={adminKey} />
+              <label className="font-serif text-xs uppercase tracking-wider text-white/55">
+                Event
+              </label>
+              <select
+                name="event"
+                defaultValue={eventSlug}
+                className="rounded-md border border-white/15 bg-white/5 px-2 py-1 font-pixel text-[0.6rem] text-gsGreen"
+              >
+                {activeEvents.map((e) => (
+                  <option key={e.slug} value={e.slug}>
+                    {e.name} ({e.slug})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="rounded-md border border-gsGreen px-3 py-1 font-pixel text-[0.55rem] uppercase tracking-wider text-gsGreen transition hover:bg-gsGreen/10"
+              >
+                Switch
+              </button>
+            </form>
+          ) : null}
+          <Link
+            href={`/admin/events?key=${encodeURIComponent(adminKey)}`}
+            className="rounded-md border border-gsGreen px-4 py-2 font-pixel text-[0.55rem] uppercase tracking-wider text-gsGreen transition hover:bg-gsGreen/10"
+          >
+            Manage Events →
+          </Link>
           <a
-            href={`/api/admin/csv?key=${encodeURIComponent(adminKey)}`}
+            href={`/api/admin/csv?key=${encodeURIComponent(adminKey)}&event=${encodeURIComponent(eventSlug)}`}
             className="rounded-md bg-gsGreen px-4 py-2 font-pixel text-[0.55rem] uppercase tracking-wider text-gsNavy hover:brightness-110"
           >
             Export CSV
           </a>
           <form action={retryHubspotAction}>
             <input type="hidden" name="key" value={adminKey} />
+            <input type="hidden" name="event" value={eventSlug} />
             <button
               type="submit"
               disabled={failedHubspot === 0}

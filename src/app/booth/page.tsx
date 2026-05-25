@@ -1,27 +1,24 @@
-import { BoothBackdrop } from "@/components/BoothBackdrop";
-import { BoothShell } from "@/components/BoothShell";
-import { getLeaderboard, getPlayerCount } from "@/lib/db";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function BoothPage() {
-  const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "the booth";
-  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG ?? "";
-  const gameUrl = process.env.NEXT_PUBLIC_GAME_URL ?? "";
-  const [entries, total] = eventSlug
-    ? await Promise.all([getLeaderboard(eventSlug, 10), getPlayerCount(eventSlug)])
-    : [[], 0];
-
-  return (
-    <main className="relative flex h-[100dvh] flex-col items-stretch overflow-hidden">
-      <BoothBackdrop eventName={eventName} />
-      <BoothShell
-        eventName={eventName}
-        eventSlug={eventSlug}
-        gameUrl={gameUrl}
-        initialEntries={entries}
-        initialTotal={total}
-      />
-    </main>
-  );
+// Legacy route — kept alive so the current test URL keeps working
+// through the migration. Reads the env-var default and forwards to
+// the new /booth/[slug] structure. Once everyone is on slugged URLs,
+// this file can be deleted.
+export default function LegacyBoothPage() {
+  const defaultSlug = process.env.NEXT_PUBLIC_EVENT_SLUG;
+  if (!defaultSlug) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+        <h1 className="font-pixel text-xl text-gsGreen">No event configured</h1>
+        <p className="mt-4 max-w-md font-serif text-sm text-white/70">
+          Set up an event at{" "}
+          <code className="text-gsGreen">/admin</code> and visit{" "}
+          <code className="text-gsGreen">/booth/&lt;slug&gt;</code> to run it.
+        </p>
+      </main>
+    );
+  }
+  redirect(`/booth/${defaultSlug}`);
 }

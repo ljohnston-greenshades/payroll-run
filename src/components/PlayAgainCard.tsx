@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface Props {
+  eventSlug: string;
   screenName: string;
   personalBest?: number;
   personalRank?: number;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function PlayAgainCard({
+  eventSlug,
   screenName,
   personalBest = 0,
   personalRank = 0,
@@ -24,7 +26,11 @@ export function PlayAgainCard({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/queue/rejoin", { method: "POST" });
+      const res = await fetch("/api/queue/rejoin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventSlug }),
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.queueToken) {
         setError("Couldn't get you in line. Please try again.");

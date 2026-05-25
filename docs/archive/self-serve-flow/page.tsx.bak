@@ -1,15 +1,14 @@
 import Image from "next/image";
-import { notFound } from "next/navigation";
 import { GreenshadesLogo } from "@/components/GreenshadesLogo";
 import { RegistrationForm } from "@/components/RegistrationForm";
 import { PlayAgainCard } from "@/components/PlayAgainCard";
 import {
-  getEvent,
+  getCurrentPlayer,
+} from "@/lib/session";
+import {
   getLeaderboardPosition,
   getPersonalBest,
 } from "@/lib/db";
-import { getCurrentPlayer } from "@/lib/session";
-import { isValidEventSlug } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -17,35 +16,13 @@ interface SearchParams {
   mode?: string;
 }
 
-// Event-scoped registration page. This is what the booth-display QR
-// codes encode (`payrollrunner.com/<slug>?mode=booth`) — scanning
-// drops the visitor onto a form tied to that specific event with no
-// env-var dance required.
-export default async function EventRegistrationPage({
-  params,
+export default async function HomePage({
   searchParams,
 }: {
-  params: { eventSlug: string };
   searchParams: SearchParams;
 }) {
-  const slug = decodeURIComponent(params.eventSlug);
-  if (!isValidEventSlug(slug)) notFound();
-
-  const event = await getEvent(slug);
-  if (!event) notFound();
-  if (event.archived_at) {
-    return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        <h1 className="font-pixel text-2xl text-gsGreen">{event.name}</h1>
-        <p className="mt-4 max-w-md font-serif text-base text-white/70">
-          This event has wrapped — registrations are closed. Check{" "}
-          <a className="text-gsGreen underline" href="/">payrollrunner.com</a>{" "}
-          for upcoming events.
-        </p>
-      </main>
-    );
-  }
-
+  const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "the booth";
+  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG ?? "";
   const isBoothMode = searchParams.mode === "booth";
 
   // Returning player on the booth-QR path? Skip the form (and the
@@ -53,15 +30,18 @@ export default async function EventRegistrationPage({
   // Play Again button instead.
   const player = await getCurrentPlayer();
   const showPlayAgain =
-    isBoothMode && !!player && player.event_slug === event.slug;
+    isBoothMode && !!player && player.event_slug === eventSlug;
 
+  // For the Play Again card: their personal best + where that best
+  // ranks in the live leaderboard. Keeps the public board lean (top 20)
+  // while still telling the returning player exactly where they sit.
   let personalBest = 0;
   let personalRank = 0;
   let personalTotal = 0;
   if (showPlayAgain && player) {
-    personalBest = await getPersonalBest(player.id, event.slug);
+    personalBest = await getPersonalBest(player.id, eventSlug);
     if (personalBest > 0) {
-      const ranked = await getLeaderboardPosition(event.slug, personalBest);
+      const ranked = await getLeaderboardPosition(eventSlug, personalBest);
       personalRank = ranked.position;
       personalTotal = ranked.total;
     }
@@ -114,7 +94,7 @@ export default async function EventRegistrationPage({
           >
             <GreenshadesLogo className="h-8 w-auto md:h-10" />
             <p className="mt-3 font-serif text-xs uppercase tracking-[0.25em] text-white/70 md:text-sm">
-              {event.name}
+              {eventName}
             </p>
           </div>
 
@@ -132,14 +112,13 @@ export default async function EventRegistrationPage({
 
           {showPlayAgain && player ? (
             <PlayAgainCard
-              eventSlug={event.slug}
               screenName={player.screen_name}
               personalBest={personalBest}
               personalRank={personalRank}
               personalTotal={personalTotal}
             />
           ) : (
-            <RegistrationForm eventSlug={event.slug} />
+            <RegistrationForm />
           )}
         </div>
       </section>

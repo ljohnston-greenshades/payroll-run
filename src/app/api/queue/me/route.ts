@@ -42,5 +42,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     position,
     screenName: entry.screen_name,
     waitSeconds,
+    eventSlug: entry.event_slug,
   });
 }
