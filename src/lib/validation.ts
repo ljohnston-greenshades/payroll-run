@@ -14,6 +14,25 @@ const BLOCKED_DOMAINS = new Set(envBlocklist.length ? envBlocklist : FALLBACK_BL
 
 const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)$/;
 
+// Event slugs become URL segments (e.g. /booth/bullhorn-engage-2026) so we
+// keep them ASCII-safe and short. Reserved roots that would shadow other
+// routes are rejected up front.
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const RESERVED_SLUGS = new Set([
+  "admin",
+  "api",
+  "booth",
+  "leaderboard",
+  "play",
+  "queue",
+]);
+
+export function isValidEventSlug(slug: string): boolean {
+  if (!slug || slug.length < 3 || slug.length > 50) return false;
+  if (RESERVED_SLUGS.has(slug)) return false;
+  return SLUG_REGEX.test(slug);
+}
+
 export interface ParsedEmail {
   local: string;
   domain: string;

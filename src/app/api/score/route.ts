@@ -16,18 +16,13 @@ interface ScorePayload {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG;
-  if (!eventSlug) {
-    return NextResponse.json(
-      { error: "event_slug_missing" },
-      { status: 500 },
-    );
-  }
-
   const player = await getCurrentPlayer();
   if (!player) {
     return NextResponse.json({ error: "no_session" }, { status: 401 });
   }
+  // Use the event the player registered for — multi-event setups
+  // can't trust a global env var here.
+  const eventSlug = player.event_slug;
 
   let body: ScorePayload;
   try {

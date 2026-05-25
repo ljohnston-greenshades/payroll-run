@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { isValidAdminKey } from "@/lib/admin";
 import {
   deleteScore,
+  getEvent,
   getFailedHubspotPlayers,
   markHubspotSubmitted,
 } from "@/lib/db";
@@ -28,9 +29,15 @@ export async function deleteScoreAction(formData: FormData): Promise<void> {
 
 export async function retryHubspotAction(formData: FormData): Promise<void> {
   assertAdmin(formData);
-  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG;
-  const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? eventSlug ?? "";
-  if (!eventSlug) throw new Error("event_slug_missing");
+  const requestedSlug =
+    (formData.get("event")?.toString() ?? "") ||
+    process.env.NEXT_PUBLIC_EVENT_SLUG ||
+    "";
+  if (!requestedSlug) throw new Error("event_slug_missing");
+  const event = await getEvent(requestedSlug);
+  const eventSlug = event?.slug ?? requestedSlug;
+  const eventName =
+    event?.name ?? process.env.NEXT_PUBLIC_EVENT_NAME ?? eventSlug;
 
   const players = await getFailedHubspotPlayers(eventSlug);
   // Sequential to keep rate friendly; HubSpot Forms API has no published

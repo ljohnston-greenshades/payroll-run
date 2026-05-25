@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@vercel/postgres";
 import {
   getOrPromoteNextEntry,
@@ -6,19 +6,19 @@ import {
 } from "@/lib/db";
 import { setSessionCookie } from "@/lib/session";
 
-// Polled every 2s by the booth. Force dynamic so Next doesn't cache the
-// first "empty queue" response and serve it forever.
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 // Booth station polls this. Returns the current spotlight entry
 // (playing or ready), promoting a waiting entry if the spotlight is
 // empty. Also issues a session cookie tied to the spotlight player so
 // /api/score and /api/game-start work without booth-side login.
-export async function GET(): Promise<NextResponse> {
-  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const eventSlug =
+    new URL(req.url).searchParams.get("event") ??
+    process.env.NEXT_PUBLIC_EVENT_SLUG;
   if (!eventSlug) {
-    return NextResponse.json({ error: "event_slug_missing" }, { status: 500 });
+    return NextResponse.json({ error: "event_slug_missing" }, { status: 400 });
   }
 
   const entry = await getOrPromoteNextEntry(eventSlug);

@@ -29,7 +29,13 @@ function inferCompanyFromEmail(email: string): string {
   return root.charAt(0).toUpperCase() + root.slice(1);
 }
 
-export function RegistrationForm() {
+interface Props {
+  // The event the player is registering for. Required for every booth-
+  // QR flow — the parent page reads it from the URL path /[slug].
+  eventSlug: string;
+}
+
+export function RegistrationForm({ eventSlug }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") === "booth" ? "booth" : "event";
@@ -65,7 +71,7 @@ export function RegistrationForm() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, mode }),
+        body: JSON.stringify({ ...form, mode, eventSlug }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -77,6 +83,9 @@ export function RegistrationForm() {
       if (mode === "booth" && data?.queueToken) {
         router.push(`/queue/${data.queueToken}`);
       } else {
+        // Self-serve flow still uses the legacy /play path that reads
+        // the env-var event. Once that path is retired we can route
+        // to /${eventSlug}/play or similar.
         router.push("/play");
       }
     } catch {

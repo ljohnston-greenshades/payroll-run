@@ -19,6 +19,7 @@ interface QueueResponse {
   position: number;
   screenName: string;
   waitSeconds: number;
+  eventSlug: string;
 }
 
 const POLL_INTERVAL_MS = 3_000;
@@ -51,9 +52,12 @@ export function QueueWaitScreen({ token }: Props) {
         setError(null);
         setData(json);
         // When the run finishes, hop straight to the Play Again screen
-        // so the user doesn't have to re-scan the QR to queue up again.
+        // for the player's own event so they don't have to re-scan the
+        // QR to queue up again.
         if (json.status === "done") {
-          router.replace("/?mode=booth");
+          router.replace(
+            `/${encodeURIComponent(json.eventSlug)}?mode=booth`,
+          );
         }
       } catch {
         if (!cancelled) setError("Connection issue.");

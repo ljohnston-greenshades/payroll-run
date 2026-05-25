@@ -20,13 +20,14 @@ export default async function PlayPage({
 }: {
   searchParams: SearchParams;
 }) {
+  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG ?? "";
+  const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "";
   const player = await getCurrentPlayer();
   if (!player) {
-    redirect("/");
+    // No session → kick to the event registration page so the player
+    // can sign up. If no default event is configured, fall back to /.
+    redirect(eventSlug ? `/${eventSlug}` : "/");
   }
-
-  const eventName = process.env.NEXT_PUBLIC_EVENT_NAME ?? "";
-  const eventSlug = process.env.NEXT_PUBLIC_EVENT_SLUG ?? "";
   const showSideBoard = searchParams.board === "side";
 
   const [entries, total] =
