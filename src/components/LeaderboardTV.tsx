@@ -40,6 +40,12 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
   // identity and animates from old rank to new rank.
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const lastTops = useRef<Map<string, number>>(new Map());
+  // Names of players whose score actually changed on the most recent
+  // poll. Only THESE rows get animated — when a fresh PB displaces 5
+  // other players, animating all 6 at once feels chaotic, so the
+  // displaced rows snap silently to their new positions while only
+  // the riser gets the spotlight.
+  const freshScreenNames = useRef<Set<string>>(new Set());
 
   useLayoutEffect(() => {
     const liveScreenNames = new Set<string>();
@@ -47,8 +53,12 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
       liveScreenNames.add(screenName);
       const currentTop = el.offsetTop;
       const prevTop = lastTops.current.get(screenName);
-      if (prevTop !== undefined && prevTop !== currentTop) {
-        const dy = prevTop - currentTop;
+      const shouldAnimate =
+        prevTop !== undefined &&
+        prevTop !== currentTop &&
+        freshScreenNames.current.has(screenName);
+      if (shouldAnimate) {
+        const dy = prevTop! - currentTop;
         el.style.transition = "none";
         el.style.transform = `translateY(${dy}px)`;
         // Force a synchronous reflow so the browser actually paints
@@ -89,16 +99,23 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
         const incoming = new Set(data.entries.map(entryKey));
         if (isFirstPoll) {
           previousKeys.current = incoming;
+          freshScreenNames.current = new Set();
           setEntries(data.entries);
           setTotal(data.total);
           isFirstPoll = false;
           return;
         }
         const fresh = new Set<string>();
-        for (const key of incoming) {
-          if (!previousKeys.current.has(key)) fresh.add(key);
+        const freshNames = new Set<string>();
+        for (const entry of data.entries) {
+          const key = entryKey(entry);
+          if (!previousKeys.current.has(key)) {
+            fresh.add(key);
+            freshNames.add(entry.screen_name);
+          }
         }
         previousKeys.current = incoming;
+        freshScreenNames.current = freshNames;
 
         setEntries(data.entries);
         setTotal(data.total);
