@@ -292,16 +292,20 @@ function AttractScreen({
   return (
     <div className="relative flex flex-1 flex-col items-stretch gap-6 px-8 pb-6 pt-6 lg:px-12 lg:pb-8 lg:pt-8 xl:px-16">
       <ParallaxSkyline />
-      <div className="grid flex-1 grid-cols-1 gap-8 lg:grid-cols-[1.5fr,1fr]">
-        <section className="flex flex-col rounded-lg border border-gsGreen/30 bg-white/[0.04] p-6 lg:p-8">
+      {/* min-h-0 on grid children so they can't grow past their cell.
+          Without it, the leaderboard would expand to fit all rows and
+          push the player-count footer + adjacent UI off the viewport. */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-8 lg:grid-cols-[1.5fr,1fr]">
+        <section className="flex min-h-0 flex-col rounded-lg border border-gsGreen/30 bg-white/[0.04] p-6 lg:p-8">
           <h2 className="mb-4 font-pixel text-base uppercase tracking-wider text-gsGreen lg:text-xl">
             Leaderboard
           </h2>
-          <div className="flex-1 overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-hidden">
             <LeaderboardTV
               initialEntries={initialEntries}
               initialTotal={initialTotal}
               eventSlug={eventSlug}
+              maxVisible={12}
             />
           </div>
           <p className="mt-4 border-t border-white/10 pt-3 font-pixel text-xs uppercase tracking-widest text-white/55 lg:text-sm">

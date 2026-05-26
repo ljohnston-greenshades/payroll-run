@@ -12,6 +12,11 @@ interface Props {
   initialEntries: LeaderboardEntry[];
   initialTotal: number;
   eventSlug: string;
+  // Optional hard cap on how many rows actually render. Without this,
+  // every entry the API returns gets a row — which pushes adjacent UI
+  // elements past the viewport on smaller screens. Set this to the
+  // number of rows the container can comfortably show.
+  maxVisible?: number;
 }
 
 interface LeaderboardResponse {
@@ -23,7 +28,7 @@ function entryKey(entry: LeaderboardEntry): string {
   return `${entry.screen_name}:${entry.high_score}`;
 }
 
-export function LeaderboardTV({ initialEntries, initialTotal, eventSlug }: Props) {
+export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisible }: Props) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>(initialEntries);
   const [total, setTotal] = useState(initialTotal);
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set());
@@ -132,11 +137,14 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug }: Props
     );
   }
 
+  const visibleEntries =
+    typeof maxVisible === "number" ? entries.slice(0, maxVisible) : entries;
+
   return (
     <div className="overflow-hidden">
       <table className="w-full">
         <tbody>
-          {entries.map((entry, idx) => {
+          {visibleEntries.map((entry, idx) => {
             const key = entryKey(entry);
             const medal = MEDALS[idx];
             const isHighlight = highlighted.has(key);
