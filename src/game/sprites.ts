@@ -258,7 +258,8 @@ function drawErrorEnemy(
 // Simple, scary AUDIT warning sign — same chunky red shape as the
 // original IRS sign with the word "AUDIT" in place of "IRS". A small
 // gray post stub anchors it visually whether it spawns on the ground
-// or floats mid-air.
+// or floats mid-air. Text auto-fits so longer words like "AUDIT"
+// can't overflow the sign frame.
 function drawAuditSign(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -278,13 +279,25 @@ function drawAuditSign(
   drawRect(ctx, x, y, w, signH, "#7a0e0e");
   // Bright red sign face
   drawRect(ctx, x + 4, y + 4, w - 8, signH - 8, "#ee3333");
-  // AUDIT text
+
+  // Auto-fit the AUDIT text so it never overflows the sign panel.
+  // Press Start 2P is monospace-ish but the exact glyph width varies
+  // by size, so we measure rather than estimate.
+  const innerW = w - 14;
+  let textSize = Math.min(14, Math.floor(signH * 0.55));
+  ctx.save();
+  while (textSize > 6) {
+    ctx.font = `${textSize}px "Press Start 2P", monospace`;
+    if (ctx.measureText("AUDIT").width <= innerW) break;
+    textSize -= 1;
+  }
+  ctx.restore();
   drawPixelText(
     ctx,
     "AUDIT",
     x + w / 2,
     y + signH / 2 + 1,
-    Math.min(14, Math.floor(signH * 0.5)),
+    textSize,
     "#fff",
     "center",
   );
