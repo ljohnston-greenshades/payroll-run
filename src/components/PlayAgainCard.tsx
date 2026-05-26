@@ -93,28 +93,18 @@ export function PlayAgainCard({
       <BackgroundConfetti />
 
       <div className="relative">
-        {/* Welcome banner with star decorations */}
-        <div className="relative text-center">
-          <Star className="absolute left-4 top-1 h-4 w-4 text-yellow-300/80" />
-          <Star className="absolute right-4 top-1 h-3 w-3 text-yellow-300/60" />
+        {/* Welcome banner */}
+        <div className="text-center">
           <p className="font-pixel text-xs uppercase tracking-widest text-white/65">
             Welcome back,
           </p>
-          <p className="relative mt-2 font-pixel text-4xl text-gsGreen sm:text-5xl">
+          <p className="mt-2 font-pixel text-4xl text-gsGreen sm:text-5xl">
             {screenName}
           </p>
         </div>
 
-        {/* Greenshades trophy PNG with radiating glow behind */}
-        <div className="relative mt-6 flex justify-center">
-          <div
-            aria-hidden
-            className="absolute inset-0 -z-10"
-            style={{
-              background:
-                "radial-gradient(circle at 50% 50%, rgba(133,196,65,0.40), transparent 65%)",
-            }}
-          />
+        {/* Greenshades trophy */}
+        <div className="mt-6 flex justify-center">
           <Image
             src="/trophy.png"
             alt=""
@@ -216,15 +206,13 @@ export function PlayAgainCard({
               <ShieldIcon className="h-6 w-6 text-white" />
             </span>
             <span className="flex-1">
-              <span className="flex items-center justify-between gap-2 font-pixel text-xs text-gsNavy sm:text-sm">
-                <span className="whitespace-nowrap">
-                  {demoBusy ? "SENDING…" : "GET A REAL COMPLIANCE SHIELD"}
-                </span>
+              <span className="flex items-center justify-between font-pixel text-base text-gsNavy">
+                <span>{demoBusy ? "SENDING…" : "SCHEDULE A DEMO"}</span>
                 <span aria-hidden>→</span>
               </span>
               <span className="mt-1 block font-serif text-xs text-gsNavy/75">
-                See how Greenshades can simplify payroll and workforce
-                management for your team!
+                Get a real shield. See how Greenshades can simplify payroll
+                and compliance!
               </span>
             </span>
           </button>
@@ -235,18 +223,17 @@ export function PlayAgainCard({
           </p>
         ) : null}
 
-        {/* AirPods prize callout — same circle-icon pattern as the
-            CTAs above for visual consistency */}
+        {/* AirPods prize callout — same circle-icon + pixel-title +
+            serif-subcopy pattern as the CTAs above so the three rows
+            read as a unified set. */}
         <div className="mt-3 flex items-center gap-4 rounded-lg border border-white/15 p-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10">
             <HeadphonesIcon className="h-6 w-6 text-white/85" />
           </span>
           <div className="flex-1">
-            <p className="font-serif text-sm text-gsGreen">
-              You&apos;re in the running to win AirPods!
-            </p>
-            <p className="mt-0.5 font-serif text-xs text-white/55">
-              Winners will be notified after the event.
+            <p className="font-pixel text-base text-gsGreen">WIN AIRPODS</p>
+            <p className="mt-1 font-serif text-xs text-white/65">
+              You&apos;re in the running. Winners notified after the event.
             </p>
           </div>
         </div>
@@ -335,13 +322,6 @@ function buildConfettiPieces(count: number): ConfettiPiece[] {
   }));
 }
 
-function Star({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
-      <path d="M12 2l2.4 6.9 7.1.2-5.6 4.3 2 6.8L12 16l-5.9 4.2 2-6.8-5.6-4.3 7.1-.2z" />
-    </svg>
-  );
-}
 
 function PlayIcon({ className = "" }: { className?: string }) {
   return (
