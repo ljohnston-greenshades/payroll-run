@@ -94,17 +94,22 @@ const INTRO_PANELS: string[] = [
   "Meet Flo, the fastest flamingo in payroll.",
   "Flo had one simple job: keep payroll running, stay compliant, and make it to payday without a back-office meltdown.",
   "But trouble is everywhere.",
-  "The IRS Audits are swooping in. The payroll errors are glitching through the system.",
-  "And worst of all... someone spilled coffee directly in the compliance zone.",
+  "IRS Audits are swooping in.",
+  "Payroll errors are popping up in the system.",
+  "And worst of all… someone spilled coffee.",
   "One wrong move and Flo is cooked.",
   "Help Flo jump over ground threats and duck under flying ones. Audits, errors, and spilled coffee are sudden death.",
   "Grab paychecks for cash, W-2s for the big filing, and Greenshades Shields for invincibility.",
   "Collect rewards in a row to build your combo and run up the score.",
   "Payroll waits for no flamingo!",
 ];
-// Pause after each panel finishes typing before auto-advancing.
-// ~2.2 seconds — long enough to actually read and absorb a line.
-const INTRO_HOLD_FRAMES = 130;
+// Length-aware hold timing: short panels feel snappy, long panels
+// linger long enough to actually read the last sentence. Used after
+// typing completes — typing time already scales with text length on
+// its own.
+function holdFramesForPanel(text: string): number {
+  return Math.max(60, Math.min(190, 50 + Math.round(text.length * 1.3)));
+}
 // Highlight ring advances to the next icon every this many frames.
 // Slow enough that eyes track each icon comfortably before the ring
 // moves on.
@@ -284,7 +289,9 @@ export class Game {
   private advanceIntroPanel(): void {
     this.introPanelIndex++;
     this.introCharCount = 0;
-    this.introHoldFrames = INTRO_HOLD_FRAMES;
+    // Default placeholder; the real hold for this panel is set once
+    // typing finishes (and is recomputed per-panel from its length).
+    this.introHoldFrames = 0;
     if (this.introPanelIndex >= INTRO_PANELS.length) {
       this.finishIntro();
     }
@@ -395,7 +402,7 @@ export class Game {
         if (this.introCharCount < fullLen) {
           // First press finishes typing
           this.introCharCount = fullLen;
-          this.introHoldFrames = INTRO_HOLD_FRAMES;
+          this.introHoldFrames = holdFramesForPanel(fullText);
         } else {
           // Subsequent press advances panel
           this.advanceIntroPanel();
@@ -407,7 +414,7 @@ export class Game {
             if (this.introCharCount >= fullLen) {
               // Typing just completed — start the hold timer so the
               // panel doesn't auto-advance instantly on the next frame.
-              this.introHoldFrames = INTRO_HOLD_FRAMES;
+              this.introHoldFrames = holdFramesForPanel(fullText);
             }
           }
         } else if (this.introHoldFrames > 0) {
