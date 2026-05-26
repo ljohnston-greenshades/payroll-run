@@ -6,6 +6,7 @@ import { PlayAgainCard } from "@/components/PlayAgainCard";
 import {
   getEvent,
   getLeaderboardPosition,
+  getMostRecentScore,
   getPersonalBest,
 } from "@/lib/db";
 import { getCurrentPlayer } from "@/lib/session";
@@ -58,8 +59,10 @@ export default async function EventRegistrationPage({
   let personalBest = 0;
   let personalRank = 0;
   let personalTotal = 0;
+  let runScore: number | null = null;
   if (showPlayAgain && player) {
     personalBest = await getPersonalBest(player.id, event.slug);
+    runScore = await getMostRecentScore(player.id, event.slug);
     if (personalBest > 0) {
       const ranked = await getLeaderboardPosition(event.slug, personalBest);
       personalRank = ranked.position;
@@ -90,10 +93,11 @@ export default async function EventRegistrationPage({
             {event.name}
           </p>
         </header>
-        <div className="mt-4 w-full max-w-md">
+        <div className="mt-10 w-full max-w-md">
           <PlayAgainCard
             eventSlug={event.slug}
             screenName={player.screen_name}
+            runScore={runScore}
             personalBest={personalBest}
             personalRank={personalRank}
             personalTotal={personalTotal}

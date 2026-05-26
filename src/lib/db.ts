@@ -219,6 +219,22 @@ export async function getPersonalBest(
   return rows[0]?.best ?? 0;
 }
 
+// The player's most recent run at this event — used by the Play Again
+// card to show "you just scored $X" alongside their PB so the two
+// numbers don't get conflated.
+export async function getMostRecentScore(
+  playerId: string,
+  eventSlug: string,
+): Promise<number | null> {
+  const { rows } = await sql<{ score: number }>`
+    SELECT score FROM scores
+    WHERE player_id = ${playerId} AND event_slug = ${eventSlug}
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+  return rows[0]?.score ?? null;
+}
+
 // Position is the player's rank when their personal best is compared
 // against everyone else's personal best in the event. 1 = top of board.
 export async function getLeaderboardPosition(
