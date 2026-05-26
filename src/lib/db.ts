@@ -76,6 +76,13 @@ export async function markDemoRequested(playerId: string): Promise<void> {
   `;
 }
 
+// Wipes a player and all their data — scores + queue entries cascade
+// via ON DELETE CASCADE on the players.id FK. Used by the admin panel
+// to clean up test rows / fake registrations.
+export async function deletePlayer(playerId: string): Promise<void> {
+  await sql`DELETE FROM players WHERE id = ${playerId}`;
+}
+
 export interface Score {
   id: string;
   player_id: string;

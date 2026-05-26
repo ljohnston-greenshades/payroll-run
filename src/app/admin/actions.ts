@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isValidAdminKey } from "@/lib/admin";
 import {
+  deletePlayer,
   deleteScore,
   getEvent,
   getFailedHubspotPlayers,
@@ -24,6 +25,18 @@ export async function deleteScoreAction(formData: FormData): Promise<void> {
     throw new Error("invalid_id");
   }
   await deleteScore(id);
+  revalidatePath("/admin");
+}
+
+// Removes a player and (via cascade) all their scores + queue
+// entries. Used for cleaning up test rows.
+export async function deletePlayerAction(formData: FormData): Promise<void> {
+  assertAdmin(formData);
+  const id = formData.get("id");
+  if (typeof id !== "string" || !id) {
+    throw new Error("invalid_id");
+  }
+  await deletePlayer(id);
   revalidatePath("/admin");
 }
 
