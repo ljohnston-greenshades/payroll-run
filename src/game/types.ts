@@ -1,4 +1,4 @@
-export type GameState = "title" | "playing" | "gameover";
+export type GameState = "title" | "intro" | "playing" | "gameover";
 
 export interface Player {
   x: number;
@@ -14,7 +14,7 @@ export interface Player {
   trailTimer: number;
 }
 
-export type ObstacleType = "tax" | "deadline" | "garnishment";
+export type ObstacleType = "spreadsheet" | "coffee" | "slackdm";
 
 export interface Obstacle {
   x: number;

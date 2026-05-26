@@ -79,8 +79,27 @@ export interface GameOptions {
   hideSessionBest?: boolean;
 }
 
-const OBSTACLE_TYPES: ObstacleType[] = ["tax", "deadline", "garnishment"];
-const OBSTACLE_WEIGHTS = [0.4, 0.35, 0.25];
+// Three flavors of office misery to dodge:
+//   spreadsheet — ground, jump over (the #REF! pile of papers)
+//   coffee      — ground, low — spilled mug on the floor (slip hazard)
+//   slackdm     — air, duck under (the "got a min?" speech bubble)
+// Spreadsheet leads the spawn weights because it's the most universal
+// joke; the other two split the rest.
+const OBSTACLE_TYPES: ObstacleType[] = ["spreadsheet", "coffee", "slackdm"];
+const OBSTACLE_WEIGHTS = [0.4, 0.3, 0.3];
+
+// Pokemon-style tutorial intro that plays once per game session
+// before the first run. Each entry is one panel that types out
+// character-by-character. Tone: friendly, payroll-pro inside-jokey.
+const INTRO_PANELS: string[] = [
+  "Meet FLO. She runs payroll at Greenshades.",
+  "Help her keep payroll moving. Grab paychecks and W-2s for points!",
+  "Look for GREENSHADES SHIELDS - they make Flo invincible for 5 seconds.",
+  "Dodge the chaos: broken spreadsheets, spilled coffee, and your boss's 'Got a min?' DMs.",
+  "Ready? Press JUMP to go!",
+];
+// Slight pause after each panel finishes typing before auto-advancing.
+const INTRO_HOLD_FRAMES = 90;
 // Probability bag: ~75% paychecks, 20% W-2s, 5% shields. Shields are
 // rare so they feel like a real reward when one shows up.
 const COLLECTIBLE_BAG: CollectibleType[] = [
@@ -143,6 +162,15 @@ export class Game {
   // Brief input lockout after game over so an accidental keypress
   // doesn't skip past the result screen and immediately restart.
   private gameOverLockoutFrames = 0;
+
+  // Intro tutorial state — Pokemon-style scrolling brief that plays
+  // before the first run of each game session. Each panel types out
+  // character-by-character, auto-advances after a brief hold, and
+  // can be skipped by pressing JUMP.
+  private introPanelIndex = 0;
+  private introCharCount = 0;
+  private introHoldFrames = 0;
+  private hasShownIntro = false;
 
   constructor(canvas: HTMLCanvasElement, private options: GameOptions = {}) {
     canvas.width = W;
@@ -217,10 +245,40 @@ export class Game {
   }
 
   private beginPlaythrough(): void {
+    // First playthrough of this Game instance gets the intro brief.
+    // Subsequent runs (player retries) skip straight to playing so
+    // we don't re-narrate to someone who just died.
+    if (!this.hasShownIntro) {
+      this.state = "intro";
+      this.introPanelIndex = 0;
+      this.introCharCount = 0;
+      this.introHoldFrames = 0;
+      this.resetRun();
+      this.options.onPlayStart?.();
+      return;
+    }
     this.state = "playing";
     this.resetRun();
     this.sound.startMusic();
     this.options.onPlayStart?.();
+  }
+
+  private finishIntro(): void {
+    this.hasShownIntro = true;
+    this.state = "playing";
+    // Reset the game-start clock to NOW so the intro doesn't get
+    // counted against the run's duration for anti-cheat.
+    this.startedAt = performance.now();
+    this.sound.startMusic();
+  }
+
+  private advanceIntroPanel(): void {
+    this.introPanelIndex++;
+    this.introCharCount = 0;
+    this.introHoldFrames = INTRO_HOLD_FRAMES;
+    if (this.introPanelIndex >= INTRO_PANELS.length) {
+      this.finishIntro();
+    }
   }
 
   private initBackground(): void {
@@ -304,6 +362,43 @@ export class Game {
       }
       if (this.input.consumeJump()) {
         this.beginPlaythrough();
+      }
+      return;
+    }
+
+    if (this.state === "intro") {
+      // Idle Flo animation + cloud drift continues so the screen isn't
+      // visually frozen.
+      this.player.legFrame += 0.5;
+      this.player.sunglassesGlint =
+        Math.sin(this.frame * 0.02) > 0.8 ? 1 : 0;
+      for (const c of this.clouds) {
+        c.x -= c.speed * 0.5;
+        if (c.x < -80) c.x = W + 40;
+      }
+      // Reveal one character every 2 frames (~30 chars/sec); a JUMP
+      // press fast-forwards through the typing, then advances the
+      // panel on the next press.
+      const panels = INTRO_PANELS;
+      const fullText = panels[this.introPanelIndex];
+      const fullLen = fullText.length;
+      if (this.input.consumeJump()) {
+        if (this.introCharCount < fullLen) {
+          // First press finishes typing
+          this.introCharCount = fullLen;
+          this.introHoldFrames = INTRO_HOLD_FRAMES;
+        } else {
+          // Subsequent press advances panel
+          this.advanceIntroPanel();
+        }
+      } else {
+        if (this.introCharCount < fullLen) {
+          if (this.frame % 2 === 0) this.introCharCount++;
+        } else if (this.introHoldFrames > 0) {
+          this.introHoldFrames--;
+        } else {
+          this.advanceIntroPanel();
+        }
       }
       return;
     }
@@ -553,29 +648,28 @@ export class Game {
   } {
     const x = obs.x;
     const y = obs.y;
-    if (obs.type === "tax") {
-      // Sign (red, x-4 → x+44, y-24 → y+8) plus post (x+16 → x+24, y → y+28).
-      return {
-        boxes: [
-          { x: x - 4, y: y - 24, w: 48, h: 32 },
-          { x: x + 16, y: y, w: 8, h: 28 },
-        ],
-      };
-    }
-    if (obs.type === "deadline") {
-      // Clock body is a circle; wings flap out the sides as separate
-      // small rectangles. Both must register as hits.
+    if (obs.type === "slackdm") {
       const bob = Math.sin(this.frame * 0.1 + obs.x) * 4;
-      const wing = Math.sin(this.frame * 0.3) * 3;
+      // The bubble itself (60 wide × 36 tall) plus the speech tail
+      // jutting down-left from the bottom. Match the rendered sprite.
       return {
         boxes: [
-          { x: x - 4, y: y + bob + 4 + wing, w: 12, h: 6 }, // left wing
-          { x: x + 32, y: y + bob + 4 - wing, w: 12, h: 6 }, // right wing
+          { x, y: y + bob, w: 60, h: 36 },
+          { x: x + 8, y: y + bob + 36, w: 6, h: 4 }, // tail
         ],
-        circle: { cx: x + 20, cy: y + 12 + bob, r: 20 },
       };
     }
-    // garnishment — paper rectangle, x → x+48, y → y+36
+    if (obs.type === "coffee") {
+      // Mostly the puddle on the ground + the tipped mug above it.
+      // 48 wide × 32 tall total.
+      return {
+        boxes: [
+          { x, y: y + 18, w: 48, h: 14 }, // puddle (low to ground)
+          { x: x + 22, y: y + 2, w: 22, h: 18 }, // mug body
+        ],
+      };
+    }
+    // spreadsheet — pile of papers 48 × 36 with stack offset on top.
     return {
       boxes: [{ x, y, w: 48, h: 36 }],
     };
@@ -586,12 +680,12 @@ export class Game {
   private obstacleBounds(obs: Obstacle): Box {
     const x = obs.x;
     const y = obs.y;
-    if (obs.type === "tax") {
-      return { x: x - 4, y: y - 24, w: 48, h: 56 };
-    }
-    if (obs.type === "deadline") {
+    if (obs.type === "slackdm") {
       const bob = Math.sin(this.frame * 0.1 + obs.x) * 4;
-      return { x, y: y - 8 + bob, w: 40, h: 40 };
+      return { x, y: y + bob, w: 60, h: 40 };
+    }
+    if (obs.type === "coffee") {
+      return { x, y, w: 48, h: 32 };
     }
     return { x, y, w: 48, h: 36 };
   }
@@ -610,16 +704,19 @@ export class Game {
     let h = 44;
     let w = 44;
     let y = GROUND_Y;
-    if (type === "deadline") {
-      h = 30;
-      w = 44;
-      y = GROUND_Y - 40 - Math.random() * 30;
-    } else if (type === "garnishment") {
+    if (type === "slackdm") {
+      // Flying speech bubble — duck under
       h = 36;
+      w = 60;
+      y = GROUND_Y - 40 - Math.random() * 30;
+    } else if (type === "coffee") {
+      // Spilled mug — short, sits on the ground
+      h = 32;
       w = 48;
     } else {
-      h = 44;
-      w = 44;
+      // spreadsheet — stacked paper, taller than coffee
+      h = 36;
+      w = 48;
     }
     const x = W + 50;
     this.obstacles.push({
@@ -636,7 +733,11 @@ export class Game {
 
   private spawnCollectible(): void {
     const type = COLLECTIBLE_BAG[Math.floor(Math.random() * COLLECTIBLE_BAG.length)];
-    const yOptions = [GROUND_Y - 50, GROUND_Y - 80, GROUND_Y - 120];
+    // GROUND_Y - 30 is the new "duck-catchable" low position — sits
+    // right at Flo's ducking-head height so a player who's ducking
+    // under a slackdm bubble can still grab paychecks on the way
+    // through. Without it, ducking is a dead zone for collecting.
+    const yOptions = [GROUND_Y - 30, GROUND_Y - 50, GROUND_Y - 80, GROUND_Y - 120];
 
     // Try positions until one doesn't overlap any obstacle within a
     // safety margin. Falls through with no spawn if every option
@@ -676,11 +777,11 @@ export class Game {
     spawnParticles(this.particles, this.player.x + 20, this.player.y - 20, Colors.red, 20);
     spawnParticles(this.particles, this.player.x + 20, this.player.y - 20, Colors.orange, 10);
     const msg =
-      obsType === "tax"
-        ? "IRS AUDIT!"
-        : obsType === "deadline"
-        ? "MISSED DEADLINE!"
-        : "WAGES GARNISHED!";
+      obsType === "spreadsheet"
+        ? "#REF! DISASTER!"
+        : obsType === "coffee"
+        ? "COFFEE SPILL!"
+        : "BOSS GOT YOU!";
     spawnFloatingText(this.floatingTexts, this.player.x, this.player.y - 40, msg, Colors.red);
     this.sound.death();
     this.sound.stopMusic();
@@ -793,7 +894,7 @@ export class Game {
     }
     ctx.globalAlpha = 1;
 
-    if (this.state !== "title") {
+    if (this.state !== "title" && this.state !== "intro") {
       drawHud(ctx, this.score, this.hiScore);
     }
     if (this.options.screenName) {
@@ -819,6 +920,7 @@ export class Game {
     }
 
     if (this.state === "title") drawTitleOverlay(ctx, this.frame);
+    if (this.state === "intro") this.drawIntroOverlay(ctx);
     if (this.state === "gameover") {
       const isNewHighScore = this.score >= this.hiScore;
       drawGameOverOverlay(
@@ -919,6 +1021,98 @@ export class Game {
         9,
         Colors.green,
         "left",
+      );
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Pokemon-style intro overlay: Flo stands in the live scene up top,
+  // dialog box pinned to the bottom of the screen with the current
+  // panel's text typing out character-by-character. JUMP advances.
+  private drawIntroOverlay(ctx: CanvasRenderingContext2D): void {
+    const text = INTRO_PANELS[this.introPanelIndex] ?? "";
+    const visible = text.slice(0, this.introCharCount);
+    const isPortrait = H > W;
+
+    // Text panel — Pokemon-style box at the bottom of the screen.
+    const panelHeight = isPortrait ? H * 0.32 : H * 0.36;
+    const panelY = H - panelHeight - (isPortrait ? 16 : 28);
+    const panelMargin = isPortrait ? 16 : 48;
+    const panelX = panelMargin;
+    const panelW = W - panelMargin * 2;
+    // Outer border + inner background
+    ctx.fillStyle = "#fff7d6";
+    ctx.fillRect(panelX, panelY, panelW, panelHeight);
+    ctx.fillStyle = "#062a47";
+    ctx.fillRect(panelX, panelY, panelW, 4);
+    ctx.fillRect(panelX, panelY + panelHeight - 4, panelW, 4);
+    ctx.fillRect(panelX, panelY, 4, panelHeight);
+    ctx.fillRect(panelX + panelW - 4, panelY, 4, panelHeight);
+    // Inner trim
+    ctx.fillStyle = "#85c441";
+    ctx.fillRect(panelX + 6, panelY + 6, panelW - 12, 2);
+    ctx.fillRect(panelX + 6, panelY + panelHeight - 8, panelW - 12, 2);
+
+    // Word-wrap the visible text within the panel's content area.
+    const fontSize = isPortrait ? 10 : 14;
+    const contentX = panelX + 20;
+    const contentY = panelY + 22;
+    const contentW = panelW - 40;
+    const lineHeight = fontSize + (isPortrait ? 8 : 12);
+    const words = visible.split(" ");
+    let line = "";
+    let drawY = contentY;
+    // Use a rough char-width estimate matched to the pixel font.
+    const approxCharW = fontSize * 0.7;
+    const maxCharsPerLine = Math.floor(contentW / approxCharW);
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (candidate.length > maxCharsPerLine && line) {
+        drawPixelText(
+          ctx,
+          line,
+          contentX,
+          drawY,
+          fontSize,
+          "#062a47",
+          "left",
+        );
+        drawY += lineHeight;
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+    if (line) {
+      drawPixelText(ctx, line, contentX, drawY, fontSize, "#062a47", "left");
+    }
+
+    // Blinking ▼ cursor in the bottom-right when typing completes,
+    // signaling "press JUMP to continue."
+    if (this.introCharCount >= text.length && this.frame % 30 < 18) {
+      drawPixelText(
+        ctx,
+        "▼",
+        panelX + panelW - 20,
+        panelY + panelHeight - 16,
+        fontSize,
+        "#062a47",
+        "right",
+      );
+    }
+
+    // Subtle "PRESS JUMP TO SKIP" hint, only on the first panel and
+    // only while typing is in progress.
+    if (this.introPanelIndex === 0 && this.introCharCount < text.length) {
+      ctx.globalAlpha = 0.6;
+      drawPixelText(
+        ctx,
+        "PRESS JUMP TO SKIP",
+        W / 2,
+        panelY - 14,
+        isPortrait ? 7 : 8,
+        "#b6ff5a",
+        "center",
       );
       ctx.globalAlpha = 1;
     }

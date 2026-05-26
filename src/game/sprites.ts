@@ -164,6 +164,29 @@ export function drawPalmTree(
   drawRect(ctx, x + 1 * s, y - 22 * s, 3 * s, 3 * s, "#5c3d0a");
 }
 
+// Mini pixel Slack logo — four colored shapes in pinwheel arrangement.
+// Recognizable at small sizes by silhouette + color even if the exact
+// stroke geometry is simplified.
+function drawSlackLogo(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  s: number,
+): void {
+  // Top-left (cyan): L-shape suggesting a rounded lozenge
+  drawRect(ctx, x, y, 3 * s, 1 * s, "#36C5F0");
+  drawRect(ctx, x, y + 1 * s, 1 * s, 2 * s, "#36C5F0");
+  // Top-right (green)
+  drawRect(ctx, x + 4 * s, y, 2 * s, 1 * s, "#2EB67D");
+  drawRect(ctx, x + 5 * s, y + 1 * s, 1 * s, 2 * s, "#2EB67D");
+  // Bottom-right (yellow)
+  drawRect(ctx, x + 3 * s, y + 5 * s, 3 * s, 1 * s, "#ECB22E");
+  drawRect(ctx, x + 5 * s, y + 3 * s, 1 * s, 2 * s, "#ECB22E");
+  // Bottom-left (red/pink)
+  drawRect(ctx, x, y + 3 * s, 1 * s, 2 * s, "#E01E5A");
+  drawRect(ctx, x, y + 5 * s, 3 * s, 1 * s, "#E01E5A");
+}
+
 export function drawObstacle(
   ctx: CanvasRenderingContext2D,
   obs: Obstacle,
@@ -172,69 +195,132 @@ export function drawObstacle(
   const x = obs.x;
   const y = obs.y;
   const s = 2;
-  if (obs.type === "tax") {
-    drawRect(ctx, x + 8 * s, y, 4 * s, 14 * s, "#888");
-    drawRect(ctx, x - 2 * s, y - 12 * s, 24 * s, 16 * s, "#cc2222");
-    drawRect(ctx, x, y - 10 * s, 20 * s, 12 * s, "#ee3333");
-    drawPixelText(ctx, "IRS", x + 10 * s, y - 4 * s, 11, Colors.white, "center");
+
+  if (obs.type === "spreadsheet") {
+    // Stack of 3 sheets of grid paper with a #REF! error cell.
+    // Slight back-to-front offset so the stack reads as multiple
+    // sheets at a glance.
+    const stackOffsets = [
+      { dx: 4 * s, dy: -3 * s, alpha: 0.6 },
+      { dx: 2 * s, dy: -1 * s, alpha: 0.8 },
+      { dx: 0, dy: 0, alpha: 1 },
+    ];
+    for (const { dx, dy, alpha } of stackOffsets) {
+      ctx.globalAlpha = alpha;
+      // Drop shadow
+      drawRect(ctx, x + dx + 1, y + dy + 1, 24 * s, 18 * s, "#000");
+      // Paper
+      drawRect(ctx, x + dx, y + dy, 24 * s, 18 * s, "#f5f5f0");
+      // Grid lines — light gray
+      for (let i = 1; i < 5; i++) {
+        drawRect(
+          ctx,
+          x + dx + 1 * s,
+          y + dy + i * 4 * s,
+          22 * s,
+          1,
+          "#c8c8c2",
+        );
+      }
+      for (let i = 1; i < 6; i++) {
+        drawRect(
+          ctx,
+          x + dx + i * 4 * s,
+          y + dy + 1 * s,
+          1,
+          16 * s,
+          "#c8c8c2",
+        );
+      }
+    }
+    ctx.globalAlpha = 1;
+    // Red error cell flashing
+    const errorPulse = Math.sin(frame * 0.18) > 0 ? "#cc2222" : "#ee3333";
+    drawRect(ctx, x + 5 * s, y + 5 * s, 11 * s, 4 * s, errorPulse);
+    drawPixelText(
+      ctx,
+      "#REF!",
+      x + 10 * s + s,
+      y + 7 * s,
+      7,
+      Colors.white,
+      "center",
+    );
     return;
   }
-  if (obs.type === "deadline") {
-    const bob = Math.sin(frame * 0.1 + obs.x) * 4;
-    const cy = y + bob;
-    ctx.fillStyle = Colors.yellow;
-    ctx.beginPath();
-    ctx.arc(x + 10 * s, cy + 6 * s, 10 * s, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#cc9900";
-    ctx.beginPath();
-    ctx.arc(x + 10 * s, cy + 6 * s, 8 * s, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = Colors.white;
-    ctx.beginPath();
-    ctx.arc(x + 10 * s, cy + 6 * s, 7 * s, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = Colors.charcoal;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x + 10 * s, cy + 6 * s);
-    const ha = frame * 0.05;
-    ctx.lineTo(x + 10 * s + Math.cos(ha) * 5 * s, cy + 6 * s + Math.sin(ha) * 5 * s);
-    ctx.moveTo(x + 10 * s, cy + 6 * s);
-    ctx.lineTo(x + 10 * s + Math.cos(ha * 3) * 3 * s, cy + 6 * s + Math.sin(ha * 3) * 3 * s);
-    ctx.stroke();
-    drawPixelText(ctx, "!", x + 10 * s, cy - 6 * s, 10, "#cc2222", "center");
-    const wing = Math.sin(frame * 0.3) * 3;
-    drawRect(ctx, x - 2 * s, cy + 2 * s + wing, 6 * s, 3 * s, "#cc9900");
-    drawRect(ctx, x + 16 * s, cy + 2 * s - wing, 6 * s, 3 * s, "#cc9900");
+
+  if (obs.type === "coffee") {
+    // Spilled coffee with tipped mug. Brown puddle on the ground +
+    // mug lying on its side. Slip hazard energy.
+    // Puddle (irregular blob from layered rects)
+    drawRect(ctx, x, y + 12 * s, 24 * s, 4 * s, "#3d2817");
+    drawRect(ctx, x + 2 * s, y + 10 * s, 20 * s, 6 * s, "#5b3c20");
+    drawRect(ctx, x + 4 * s, y + 9 * s, 16 * s, 7 * s, "#6b4528");
+    // Puddle highlight
+    drawRect(ctx, x + 6 * s, y + 11 * s, 4 * s, 1 * s, "#8d6238");
+    // Tipped mug (lying on side, opening toward the puddle)
+    // Mug body — horizontal cylinder shape
+    drawRect(ctx, x + 12 * s, y + 4 * s, 10 * s, 6 * s, "#d4d4d0");
+    drawRect(ctx, x + 12 * s, y + 4 * s, 10 * s, 1 * s, "#a8a8a4");
+    drawRect(ctx, x + 12 * s, y + 9 * s, 10 * s, 1 * s, "#909090");
+    // Mug opening (dark, facing the puddle)
+    drawRect(ctx, x + 11 * s, y + 5 * s, 1 * s, 4 * s, "#2a1a0c");
+    // Handle (on the back side of the lying mug)
+    drawRect(ctx, x + 14 * s, y + 1 * s, 2 * s, 3 * s, "#d4d4d0");
+    drawRect(ctx, x + 14 * s, y + 1 * s, 4 * s, 2 * s, "#d4d4d0");
+    drawRect(ctx, x + 18 * s, y + 1 * s, 2 * s, 3 * s, "#d4d4d0");
+    // Sad face on the mug — comedic punchline
+    drawRect(ctx, x + 16 * s, y + 6 * s, 1 * s, 1 * s, "#2a1a0c");
+    drawRect(ctx, x + 19 * s, y + 6 * s, 1 * s, 1 * s, "#2a1a0c");
+    // Frown
+    drawRect(ctx, x + 17 * s, y + 8 * s, 2 * s, 1 * s, "#2a1a0c");
     return;
   }
-  // garnishment — court order document with red header + seal
-  // Drop shadow (offset right + down)
-  drawRect(ctx, x + 1, y + 1, 24 * s, 18 * s, "#000");
-  // Paper background
-  drawRect(ctx, x, y, 24 * s, 18 * s, "#f5e6c8");
-  drawRect(ctx, x + 1 * s, y + 1 * s, 22 * s, 16 * s, "#fbf3df");
-  // Red header banner with "GARNISH" text
-  drawRect(ctx, x, y, 24 * s, 4 * s, "#cc2222");
-  drawRect(ctx, x + 1 * s, y, 22 * s, 3 * s, "#ee3333");
-  drawPixelText(ctx, "GARNISH", x + 12 * s, y + 2 * s, 7, Colors.white, "center");
-  // Body text lines
-  for (let i = 0; i < 3; i++) {
-    drawRect(ctx, x + 3 * s, y + 6 * s + i * 2 * s, 18 * s, 1 * s, "#666");
-  }
-  // Court seal (red circle with check)
-  ctx.fillStyle = "#cc2222";
-  ctx.beginPath();
-  ctx.arc(x + 18 * s, y + 14 * s, 3 * s, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#ee3333";
-  ctx.beginPath();
-  ctx.arc(x + 18 * s, y + 14 * s, 2.2 * s, 0, Math.PI * 2);
-  ctx.fill();
-  drawPixelText(ctx, "$", x + 18 * s, y + 14 * s, 5, Colors.white, "center");
-  // Signature line
-  drawRect(ctx, x + 3 * s, y + 14 * s, 10 * s, 1 * s, "#444");
+
+  // slackdm — speech bubble with mini Slack logo + "GOT A MIN?"
+  const bob = Math.sin(frame * 0.1 + obs.x) * 4;
+  const bx = x;
+  const by = y + bob;
+  const bw = 30 * s;
+  const bh = 18 * s;
+  // Drop shadow
+  drawRect(ctx, bx + 2, by + 2, bw, bh, "rgba(0,0,0,0.4)");
+  // Bubble fill (white with chunky pixel corners — clip 1 pixel from
+  // each corner to suggest rounded edges without going full circle)
+  drawRect(ctx, bx + 1 * s, by, bw - 2 * s, bh, "#ffffff");
+  drawRect(ctx, bx, by + 1 * s, bw, bh - 2 * s, "#ffffff");
+  // Outline
+  drawRect(ctx, bx + 1 * s, by, bw - 2 * s, 1, "#1a1a1a");
+  drawRect(ctx, bx + 1 * s, by + bh - 1, bw - 2 * s, 1, "#1a1a1a");
+  drawRect(ctx, bx, by + 1 * s, 1, bh - 2 * s, "#1a1a1a");
+  drawRect(ctx, bx + bw - 1, by + 1 * s, 1, bh - 2 * s, "#1a1a1a");
+  // Speech tail (pointing down-left)
+  drawRect(ctx, bx + 4 * s, by + bh, 3 * s, 1 * s, "#ffffff");
+  drawRect(ctx, bx + 4 * s, by + bh, 1 * s, 1 * s, "#1a1a1a");
+  drawRect(ctx, bx + 5 * s, by + bh + 1 * s, 1 * s, 1 * s, "#ffffff");
+  drawRect(ctx, bx + 4 * s, by + bh + 1 * s, 1 * s, 1 * s, "#1a1a1a");
+  drawRect(ctx, bx + 6 * s, by + bh + 1 * s, 1 * s, 1 * s, "#1a1a1a");
+  // Slack logo upper-left
+  drawSlackLogo(ctx, bx + 2 * s, by + 2 * s, s);
+  // "GOT A MIN?" text
+  drawPixelText(
+    ctx,
+    "GOT A",
+    bx + 18 * s,
+    by + 5 * s,
+    7,
+    "#1a1a1a",
+    "center",
+  );
+  drawPixelText(
+    ctx,
+    "MIN?",
+    bx + 18 * s,
+    by + 12 * s,
+    8,
+    "#1a1a1a",
+    "center",
+  );
 }
 
 export function drawCollectible(
