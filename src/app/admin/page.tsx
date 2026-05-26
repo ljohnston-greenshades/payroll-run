@@ -10,6 +10,7 @@ import {
   type RecentScore,
 } from "@/lib/db";
 import { deleteScoreAction, retryHubspotAction } from "./actions";
+import { DeletePlayerButton } from "./DeletePlayerButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -147,7 +148,7 @@ export default async function AdminPage({
         <h2 className="mb-3 font-pixel text-xs uppercase tracking-wider text-gsGreen">
           Players ({players.length})
         </h2>
-        <PlayersTable players={players} />
+        <PlayersTable players={players} adminKey={adminKey} />
       </section>
 
       <section>
@@ -175,7 +176,13 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PlayersTable({ players }: { players: PlayerWithStats[] }) {
+function PlayersTable({
+  players,
+  adminKey,
+}: {
+  players: PlayerWithStats[];
+  adminKey: string;
+}) {
   if (players.length === 0) {
     return (
       <p className="font-serif text-sm text-white/40">No players yet.</p>
@@ -195,6 +202,7 @@ function PlayersTable({ players }: { players: PlayerWithStats[] }) {
             <th className="px-3 py-2">HubSpot</th>
             <th className="px-3 py-2">Demo</th>
             <th className="px-3 py-2">Joined</th>
+            <th className="px-3 py-2"></th>
           </tr>
         </thead>
         <tbody className="font-serif">
@@ -235,6 +243,13 @@ function PlayersTable({ players }: { players: PlayerWithStats[] }) {
               </td>
               <td className="px-3 py-2 text-xs text-white/50">
                 {formatDate(p.created_at)}
+              </td>
+              <td className="px-3 py-2">
+                <DeletePlayerButton
+                  playerId={p.id}
+                  playerName={`${p.first_name} ${p.last_name}`}
+                  adminKey={adminKey}
+                />
               </td>
             </tr>
           ))}
