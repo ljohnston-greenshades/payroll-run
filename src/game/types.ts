@@ -14,7 +14,7 @@ export interface Player {
   trailTimer: number;
 }
 
-export type ObstacleType = "spreadsheet" | "coffee" | "slackdm";
+export type ObstacleType = "coffee" | "error" | "audit";
 
 export interface Obstacle {
   x: number;

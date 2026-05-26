@@ -18,6 +18,38 @@ export function getGsLogo(): HTMLImageElement | null {
   return gsLogoReady ? gsLogo : null;
 }
 
+// Lazily-loaded obstacle artwork. Each PNG lives in /public; we cache
+// the Image element and a "ready" flag so callers can fall back to a
+// silhouette rectangle until the asset paints.
+interface AssetRef {
+  img: HTMLImageElement;
+  ready: boolean;
+}
+const obstacleAssets: Record<string, AssetRef> = {};
+function loadAsset(src: string): HTMLImageElement | null {
+  if (typeof window === "undefined") return null;
+  let entry = obstacleAssets[src];
+  if (!entry) {
+    const img = new Image();
+    entry = { img, ready: false };
+    img.onload = () => {
+      entry!.ready = true;
+    };
+    img.src = src;
+    obstacleAssets[src] = entry;
+  }
+  return entry.ready ? entry.img : null;
+}
+export function getObstacleAsset(type: "coffee" | "error" | "audit"): HTMLImageElement | null {
+  const src =
+    type === "coffee"
+      ? "/coffee-spill.png"
+      : type === "error"
+      ? "/error-enemy.png"
+      : "/evil-audit.png";
+  return loadAsset(src);
+}
+
 export function drawRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -164,29 +196,6 @@ export function drawPalmTree(
   drawRect(ctx, x + 1 * s, y - 22 * s, 3 * s, 3 * s, "#5c3d0a");
 }
 
-// Mini pixel Slack logo — four colored shapes in pinwheel arrangement.
-// Recognizable at small sizes by silhouette + color even if the exact
-// stroke geometry is simplified.
-function drawSlackLogo(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  s: number,
-): void {
-  // Top-left (cyan): L-shape suggesting a rounded lozenge
-  drawRect(ctx, x, y, 3 * s, 1 * s, "#36C5F0");
-  drawRect(ctx, x, y + 1 * s, 1 * s, 2 * s, "#36C5F0");
-  // Top-right (green)
-  drawRect(ctx, x + 4 * s, y, 2 * s, 1 * s, "#2EB67D");
-  drawRect(ctx, x + 5 * s, y + 1 * s, 1 * s, 2 * s, "#2EB67D");
-  // Bottom-right (yellow)
-  drawRect(ctx, x + 3 * s, y + 5 * s, 3 * s, 1 * s, "#ECB22E");
-  drawRect(ctx, x + 5 * s, y + 3 * s, 1 * s, 2 * s, "#ECB22E");
-  // Bottom-left (red/pink)
-  drawRect(ctx, x, y + 3 * s, 1 * s, 2 * s, "#E01E5A");
-  drawRect(ctx, x, y + 5 * s, 3 * s, 1 * s, "#E01E5A");
-}
-
 export function drawObstacle(
   ctx: CanvasRenderingContext2D,
   obs: Obstacle,
@@ -194,133 +203,16 @@ export function drawObstacle(
 ): void {
   const x = obs.x;
   const y = obs.y;
-  const s = 2;
-
-  if (obs.type === "spreadsheet") {
-    // Stack of 3 sheets of grid paper with a #REF! error cell.
-    // Slight back-to-front offset so the stack reads as multiple
-    // sheets at a glance.
-    const stackOffsets = [
-      { dx: 4 * s, dy: -3 * s, alpha: 0.6 },
-      { dx: 2 * s, dy: -1 * s, alpha: 0.8 },
-      { dx: 0, dy: 0, alpha: 1 },
-    ];
-    for (const { dx, dy, alpha } of stackOffsets) {
-      ctx.globalAlpha = alpha;
-      // Drop shadow
-      drawRect(ctx, x + dx + 1, y + dy + 1, 24 * s, 18 * s, "#000");
-      // Paper
-      drawRect(ctx, x + dx, y + dy, 24 * s, 18 * s, "#f5f5f0");
-      // Grid lines — light gray
-      for (let i = 1; i < 5; i++) {
-        drawRect(
-          ctx,
-          x + dx + 1 * s,
-          y + dy + i * 4 * s,
-          22 * s,
-          1,
-          "#c8c8c2",
-        );
-      }
-      for (let i = 1; i < 6; i++) {
-        drawRect(
-          ctx,
-          x + dx + i * 4 * s,
-          y + dy + 1 * s,
-          1,
-          16 * s,
-          "#c8c8c2",
-        );
-      }
-    }
-    ctx.globalAlpha = 1;
-    // Red error cell flashing
-    const errorPulse = Math.sin(frame * 0.18) > 0 ? "#cc2222" : "#ee3333";
-    drawRect(ctx, x + 5 * s, y + 5 * s, 11 * s, 4 * s, errorPulse);
-    drawPixelText(
-      ctx,
-      "#REF!",
-      x + 10 * s + s,
-      y + 7 * s,
-      7,
-      Colors.white,
-      "center",
-    );
+  const bob = obs.type === "coffee" ? 0 : Math.sin(frame * 0.1 + obs.x) * 3;
+  const drawY = y + bob;
+  const img = getObstacleAsset(obs.type);
+  if (img) {
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, x, drawY, obs.w, obs.h);
     return;
   }
-
-  if (obs.type === "coffee") {
-    // Spilled coffee with tipped mug. Brown puddle on the ground +
-    // mug lying on its side. Slip hazard energy.
-    // Puddle (irregular blob from layered rects)
-    drawRect(ctx, x, y + 12 * s, 24 * s, 4 * s, "#3d2817");
-    drawRect(ctx, x + 2 * s, y + 10 * s, 20 * s, 6 * s, "#5b3c20");
-    drawRect(ctx, x + 4 * s, y + 9 * s, 16 * s, 7 * s, "#6b4528");
-    // Puddle highlight
-    drawRect(ctx, x + 6 * s, y + 11 * s, 4 * s, 1 * s, "#8d6238");
-    // Tipped mug (lying on side, opening toward the puddle)
-    // Mug body — horizontal cylinder shape
-    drawRect(ctx, x + 12 * s, y + 4 * s, 10 * s, 6 * s, "#d4d4d0");
-    drawRect(ctx, x + 12 * s, y + 4 * s, 10 * s, 1 * s, "#a8a8a4");
-    drawRect(ctx, x + 12 * s, y + 9 * s, 10 * s, 1 * s, "#909090");
-    // Mug opening (dark, facing the puddle)
-    drawRect(ctx, x + 11 * s, y + 5 * s, 1 * s, 4 * s, "#2a1a0c");
-    // Handle (on the back side of the lying mug)
-    drawRect(ctx, x + 14 * s, y + 1 * s, 2 * s, 3 * s, "#d4d4d0");
-    drawRect(ctx, x + 14 * s, y + 1 * s, 4 * s, 2 * s, "#d4d4d0");
-    drawRect(ctx, x + 18 * s, y + 1 * s, 2 * s, 3 * s, "#d4d4d0");
-    // Sad face on the mug — comedic punchline
-    drawRect(ctx, x + 16 * s, y + 6 * s, 1 * s, 1 * s, "#2a1a0c");
-    drawRect(ctx, x + 19 * s, y + 6 * s, 1 * s, 1 * s, "#2a1a0c");
-    // Frown
-    drawRect(ctx, x + 17 * s, y + 8 * s, 2 * s, 1 * s, "#2a1a0c");
-    return;
-  }
-
-  // slackdm — speech bubble with mini Slack logo + "GOT A MIN?"
-  const bob = Math.sin(frame * 0.1 + obs.x) * 4;
-  const bx = x;
-  const by = y + bob;
-  const bw = 30 * s;
-  const bh = 18 * s;
-  // Drop shadow
-  drawRect(ctx, bx + 2, by + 2, bw, bh, "rgba(0,0,0,0.4)");
-  // Bubble fill (white with chunky pixel corners — clip 1 pixel from
-  // each corner to suggest rounded edges without going full circle)
-  drawRect(ctx, bx + 1 * s, by, bw - 2 * s, bh, "#ffffff");
-  drawRect(ctx, bx, by + 1 * s, bw, bh - 2 * s, "#ffffff");
-  // Outline
-  drawRect(ctx, bx + 1 * s, by, bw - 2 * s, 1, "#1a1a1a");
-  drawRect(ctx, bx + 1 * s, by + bh - 1, bw - 2 * s, 1, "#1a1a1a");
-  drawRect(ctx, bx, by + 1 * s, 1, bh - 2 * s, "#1a1a1a");
-  drawRect(ctx, bx + bw - 1, by + 1 * s, 1, bh - 2 * s, "#1a1a1a");
-  // Speech tail (pointing down-left)
-  drawRect(ctx, bx + 4 * s, by + bh, 3 * s, 1 * s, "#ffffff");
-  drawRect(ctx, bx + 4 * s, by + bh, 1 * s, 1 * s, "#1a1a1a");
-  drawRect(ctx, bx + 5 * s, by + bh + 1 * s, 1 * s, 1 * s, "#ffffff");
-  drawRect(ctx, bx + 4 * s, by + bh + 1 * s, 1 * s, 1 * s, "#1a1a1a");
-  drawRect(ctx, bx + 6 * s, by + bh + 1 * s, 1 * s, 1 * s, "#1a1a1a");
-  // Slack logo upper-left
-  drawSlackLogo(ctx, bx + 2 * s, by + 2 * s, s);
-  // "GOT A MIN?" text
-  drawPixelText(
-    ctx,
-    "GOT A",
-    bx + 18 * s,
-    by + 5 * s,
-    7,
-    "#1a1a1a",
-    "center",
-  );
-  drawPixelText(
-    ctx,
-    "MIN?",
-    bx + 18 * s,
-    by + 12 * s,
-    8,
-    "#1a1a1a",
-    "center",
-  );
+  // Fallback silhouette until the PNG loads — keeps gameplay fair.
+  drawRect(ctx, x, drawY, obs.w, obs.h, "#cc2222");
 }
 
 export function drawCollectible(

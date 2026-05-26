@@ -80,23 +80,23 @@ export interface GameOptions {
 }
 
 // Three flavors of office misery to dodge:
-//   spreadsheet — ground, jump over (the #REF! pile of papers)
-//   coffee      — ground, low — spilled mug on the floor (slip hazard)
-//   slackdm     — air, duck under (the "got a min?" speech bubble)
-// Spreadsheet leads the spawn weights because it's the most universal
-// joke; the other two split the rest.
-const OBSTACLE_TYPES: ObstacleType[] = ["spreadsheet", "coffee", "slackdm"];
-const OBSTACLE_WEIGHTS = [0.4, 0.3, 0.3];
+//   coffee — ground only (a spilled puddle can't float)
+//   error  — anywhere (the #REF! sentinel)
+//   audit  — anywhere (the clipboard with eyes)
+const OBSTACLE_TYPES: ObstacleType[] = ["coffee", "error", "audit"];
+const OBSTACLE_WEIGHTS = [0.34, 0.33, 0.33];
 
 // Pokemon-style tutorial intro that plays once per game session
 // before the first run. Each entry is one panel that types out
 // character-by-character. Tone: friendly, payroll-pro inside-jokey.
+// Flo is the player's pixel-art sidekick — no employer, no gender,
+// just a flamingo trying to keep payroll running through the chaos.
 const INTRO_PANELS: string[] = [
-  "Meet FLO. She runs payroll at Greenshades.",
-  "Help her keep payroll moving. Grab paychecks and W-2s for points!",
-  "Look for GREENSHADES SHIELDS - they make Flo invincible for 5 seconds.",
-  "Dodge the chaos: broken spreadsheets, spilled coffee, and your boss's 'Got a min?' DMs.",
-  "Ready? Press JUMP to go!",
+  "Meet Flo. Flo loves payday.",
+  "Help Flo collect paychecks and file W-2s for points!",
+  "Grab a GREENSHADES SHIELD for 5 seconds of pure invincibility.",
+  "Watch out for the office chaos: spilled coffee, #REF! errors, and surprise audits.",
+  "Ready, partner? Press JUMP to start the run!",
 ];
 // Slight pause after each panel finishes typing before auto-advancing.
 const INTRO_HOLD_FRAMES = 90;
@@ -648,46 +648,31 @@ export class Game {
   } {
     const x = obs.x;
     const y = obs.y;
-    if (obs.type === "slackdm") {
-      const bob = Math.sin(this.frame * 0.1 + obs.x) * 4;
-      // The bubble itself (60 wide × 36 tall) plus the speech tail
-      // jutting down-left from the bottom. Match the rendered sprite.
-      return {
-        boxes: [
-          { x, y: y + bob, w: 60, h: 36 },
-          { x: x + 8, y: y + bob + 36, w: 6, h: 4 }, // tail
-        ],
-      };
-    }
+    const bob = obs.type === "coffee" ? 0 : Math.sin(this.frame * 0.1 + obs.x) * 3;
+    // PNG art doesn't always fill its bounding box edge-to-edge —
+    // shrink the hit region by a few px so near-misses feel fair.
+    // Coffee gets a flatter, wider hitbox biased to the bottom since
+    // the spill puddle is its lower half.
     if (obs.type === "coffee") {
-      // Mostly the puddle on the ground + the tipped mug above it.
-      // 48 wide × 32 tall total.
       return {
         boxes: [
-          { x, y: y + 18, w: 48, h: 14 }, // puddle (low to ground)
-          { x: x + 22, y: y + 2, w: 22, h: 18 }, // mug body
+          { x: x + 6, y: y + 20, w: obs.w - 12, h: obs.h - 22 }, // puddle
+          { x: x + 18, y: y + 4, w: 30, h: 18 }, // mug
         ],
       };
     }
-    // spreadsheet — pile of papers 48 × 36 with stack offset on top.
     return {
-      boxes: [{ x, y, w: 48, h: 36 }],
+      boxes: [
+        { x: x + 6, y: y + bob + 6, w: obs.w - 12, h: obs.h - 12 },
+      ],
     };
   }
 
   // Bounding box of an obstacle for near-miss / spawn-overlap checks
   // where we just need a single rough region.
   private obstacleBounds(obs: Obstacle): Box {
-    const x = obs.x;
-    const y = obs.y;
-    if (obs.type === "slackdm") {
-      const bob = Math.sin(this.frame * 0.1 + obs.x) * 4;
-      return { x, y: y + bob, w: 60, h: 40 };
-    }
-    if (obs.type === "coffee") {
-      return { x, y, w: 48, h: 32 };
-    }
-    return { x, y, w: 48, h: 36 };
+    const bob = obs.type === "coffee" ? 0 : Math.sin(this.frame * 0.1 + obs.x) * 3;
+    return { x: obs.x, y: obs.y + bob, w: obs.w, h: obs.h };
   }
 
   private spawnObstacle(): void {
@@ -701,22 +686,22 @@ export class Game {
         break;
       }
     }
-    let h = 44;
-    let w = 44;
+    let h = 48;
+    let w = 56;
     let y = GROUND_Y;
-    if (type === "slackdm") {
-      // Flying speech bubble — duck under
+    if (type === "coffee") {
+      // Spilled coffee always sits on the ground — a floating puddle
+      // would break the gag.
       h = 36;
-      w = 60;
-      y = GROUND_Y - 40 - Math.random() * 30;
-    } else if (type === "coffee") {
-      // Spilled mug — short, sits on the ground
-      h = 32;
-      w = 48;
+      w = 64;
     } else {
-      // spreadsheet — stacked paper, taller than coffee
-      h = 36;
-      w = 48;
+      // error / audit can spawn ground OR mid-air. Roughly 50/50; in
+      // air they float at duck height like the old deadline clock.
+      h = 48;
+      w = 56;
+      if (Math.random() < 0.5) {
+        y = GROUND_Y - 40 - Math.random() * 30;
+      }
     }
     const x = W + 50;
     this.obstacles.push({
@@ -777,11 +762,11 @@ export class Game {
     spawnParticles(this.particles, this.player.x + 20, this.player.y - 20, Colors.red, 20);
     spawnParticles(this.particles, this.player.x + 20, this.player.y - 20, Colors.orange, 10);
     const msg =
-      obsType === "spreadsheet"
+      obsType === "error"
         ? "#REF! DISASTER!"
         : obsType === "coffee"
         ? "COFFEE SPILL!"
-        : "BOSS GOT YOU!";
+        : "AUDIT CAUGHT YOU!";
     spawnFloatingText(this.floatingTexts, this.player.x, this.player.y - 40, msg, Colors.red);
     this.sound.death();
     this.sound.stopMusic();
@@ -1029,13 +1014,17 @@ export class Game {
   // Pokemon-style intro overlay: Flo stands in the live scene up top,
   // dialog box pinned to the bottom of the screen with the current
   // panel's text typing out character-by-character. JUMP advances.
+  // A row of catch/dodge icons flashes across the top of the screen
+  // so the player sees exactly what each side of the brief refers to.
   private drawIntroOverlay(ctx: CanvasRenderingContext2D): void {
     const text = INTRO_PANELS[this.introPanelIndex] ?? "";
     const visible = text.slice(0, this.introCharCount);
     const isPortrait = H > W;
 
+    this.drawIntroIconStrip(ctx, isPortrait);
+
     // Text panel — Pokemon-style box at the bottom of the screen.
-    const panelHeight = isPortrait ? H * 0.32 : H * 0.36;
+    const panelHeight = isPortrait ? H * 0.32 : H * 0.34;
     const panelY = H - panelHeight - (isPortrait ? 16 : 28);
     const panelMargin = isPortrait ? 16 : 48;
     const panelX = panelMargin;
@@ -1053,38 +1042,50 @@ export class Game {
     ctx.fillRect(panelX + 6, panelY + 6, panelW - 12, 2);
     ctx.fillRect(panelX + 6, panelY + panelHeight - 8, panelW - 12, 2);
 
-    // Word-wrap the visible text within the panel's content area.
+    // Word-wrap using actual measured glyph widths so text never
+    // spills out of the box. Press Start 2P width-per-char varies by
+    // font-size, so the previous "approxCharW" estimate was unreliable.
     const fontSize = isPortrait ? 10 : 14;
     const contentX = panelX + 20;
-    const contentY = panelY + 22;
     const contentW = panelW - 40;
     const lineHeight = fontSize + (isPortrait ? 8 : 12);
+
+    ctx.save();
+    ctx.font = `${fontSize}px "Press Start 2P", monospace`;
+    const lines: string[] = [];
     const words = visible.split(" ");
     let line = "";
-    let drawY = contentY;
-    // Use a rough char-width estimate matched to the pixel font.
-    const approxCharW = fontSize * 0.7;
-    const maxCharsPerLine = Math.floor(contentW / approxCharW);
     for (const word of words) {
       const candidate = line ? `${line} ${word}` : word;
-      if (candidate.length > maxCharsPerLine && line) {
-        drawPixelText(
-          ctx,
-          line,
-          contentX,
-          drawY,
-          fontSize,
-          "#062a47",
-          "left",
-        );
-        drawY += lineHeight;
+      const width = ctx.measureText(candidate).width;
+      if (width > contentW && line) {
+        lines.push(line);
         line = word;
       } else {
         line = candidate;
       }
     }
-    if (line) {
-      drawPixelText(ctx, line, contentX, drawY, fontSize, "#062a47", "left");
+    if (line) lines.push(line);
+    ctx.restore();
+
+    // Vertically center the text block inside the panel. Three lines
+    // covers nearly every panel; if we ever exceed that, we just
+    // stack down from the top.
+    const totalTextH = lines.length * lineHeight - (lineHeight - fontSize);
+    const startY = Math.max(
+      panelY + 22,
+      panelY + (panelHeight - totalTextH) / 2 + fontSize / 2,
+    );
+    for (let i = 0; i < lines.length; i++) {
+      drawPixelText(
+        ctx,
+        lines[i],
+        contentX,
+        startY + i * lineHeight,
+        fontSize,
+        "#062a47",
+        "left",
+      );
     }
 
     // Blinking ▼ cursor in the bottom-right when typing completes,
@@ -1116,6 +1117,111 @@ export class Game {
       );
       ctx.globalAlpha = 1;
     }
+  }
+
+  // Flashing strip of catch + dodge icons across the top of the
+  // intro screen. Cycles through paycheck → W-2 → shield (the
+  // collectibles) and coffee → #REF! → audit (the obstacles) so the
+  // player sees both sides of the brief in addition to reading it.
+  private drawIntroIconStrip(
+    ctx: CanvasRenderingContext2D,
+    isPortrait: boolean,
+  ): void {
+    const stripY = isPortrait ? 70 : 70;
+    const iconSize = isPortrait ? 32 : 56;
+    const gap = isPortrait ? 14 : 26;
+    const labelGap = isPortrait ? 10 : 16;
+    const labelSize = isPortrait ? 6 : 9;
+
+    // Two groups side by side: CATCH (left), DODGE (right).
+    const catchTypes: CollectibleType[] = ["paycheck", "w2", "shield"];
+    const dodgeTypes: ObstacleType[] = ["coffee", "error", "audit"];
+    const groupW = catchTypes.length * iconSize + (catchTypes.length - 1) * gap;
+    const groupGap = isPortrait ? 30 : 60;
+    const totalW = groupW * 2 + groupGap;
+    const startX = (W - totalW) / 2;
+
+    // CATCH group label + icons
+    drawPixelText(
+      ctx,
+      "CATCH",
+      startX + groupW / 2,
+      stripY - labelGap,
+      labelSize,
+      Colors.green,
+      "center",
+    );
+    for (let i = 0; i < catchTypes.length; i++) {
+      const cx = startX + i * (iconSize + gap);
+      this.drawCollectiblePreview(ctx, catchTypes[i], cx, stripY, iconSize);
+    }
+
+    // DODGE group label + icons
+    const dodgeX = startX + groupW + groupGap;
+    drawPixelText(
+      ctx,
+      "DODGE",
+      dodgeX + groupW / 2,
+      stripY - labelGap,
+      labelSize,
+      "#ff6b6b",
+      "center",
+    );
+    for (let i = 0; i < dodgeTypes.length; i++) {
+      const cx = dodgeX + i * (iconSize + gap);
+      this.drawObstaclePreview(ctx, dodgeTypes[i], cx, stripY, iconSize);
+    }
+
+    // Pulse highlight ring on the icon currently being "featured" —
+    // cycles through all six over the intro so each one gets a moment.
+    const cycle = Math.floor(this.frame / 30) % 6;
+    const allCount = catchTypes.length + dodgeTypes.length;
+    const idx = cycle % allCount;
+    const isCatch = idx < catchTypes.length;
+    const localIdx = isCatch ? idx : idx - catchTypes.length;
+    const ringX = isCatch
+      ? startX + localIdx * (iconSize + gap)
+      : dodgeX + localIdx * (iconSize + gap);
+    const pulse = (Math.sin(this.frame * 0.18) + 1) / 2;
+    ctx.save();
+    ctx.strokeStyle = isCatch ? Colors.green : "#ff6b6b";
+    ctx.lineWidth = 2 + pulse * 2;
+    ctx.globalAlpha = 0.4 + pulse * 0.5;
+    ctx.strokeRect(ringX - 4, stripY - 4, iconSize + 8, iconSize + 8);
+    ctx.restore();
+  }
+
+  private drawCollectiblePreview(
+    ctx: CanvasRenderingContext2D,
+    type: CollectibleType,
+    x: number,
+    y: number,
+    size: number,
+  ): void {
+    drawCollectible(
+      ctx,
+      { x: x - 16, y: y - 12, w: 32, h: 24, type, collected: false },
+      this.frame,
+    );
+  }
+
+  private drawObstaclePreview(
+    ctx: CanvasRenderingContext2D,
+    type: ObstacleType,
+    x: number,
+    y: number,
+    size: number,
+  ): void {
+    const obs: Obstacle = {
+      x,
+      y,
+      w: size,
+      h: size,
+      type,
+      nearMissed: false,
+      passed: false,
+    };
+    drawObstacle(ctx, obs, this.frame);
   }
 }
 
