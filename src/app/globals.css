@@ -30,3 +30,16 @@ body {
     opacity: 0;
   }
 }
+
+/* Slow, continuous background confetti drift used on the Play Again
+   screen. Pieces enter above the viewport, sway and rotate as they
+   fall, and exit below — looping forever so the celebration never
+   stops while the player is on the page. */
+@keyframes confettiDrift {
+  0% {
+    transform: translate3d(0, -8vh, 0) rotate(var(--rot-start, 0deg));
+  }
+  100% {
+    transform: translate3d(var(--sway, 0px), 110vh, 0) rotate(calc(var(--rot-start, 0deg) + 360deg));
+  }
+}
