@@ -1072,10 +1072,11 @@ export class Game {
 
     // Pixel-art Flo perched inside the left side of the dialog box.
     // She animates the same as her in-game idle (leg shuffle + glint)
-    // so she feels alive, not posed. We draw her over the panel's
-    // light-cream background so she pops against the page chrome.
+    // so she feels alive, not posed. Her "feet" reference point is set
+    // well inside the panel chrome so the running animation never
+    // clips below the panel's bottom border.
     const floBaseX = panelX + (isPortrait ? 10 : 28);
-    const floBaseY = panelY + panelHeight - (isPortrait ? 16 : 24);
+    const floBaseY = panelY + panelHeight - (isPortrait ? 36 : 56);
     drawFlamingo(
       ctx,
       floBaseX,
