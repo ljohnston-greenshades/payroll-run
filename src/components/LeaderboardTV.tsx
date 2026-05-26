@@ -80,14 +80,32 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
 
   useEffect(() => {
     let cancelled = false;
-    // The first poll on mount reseeds against the live state — the
-    // server-rendered `initialEntries` snapshot may be stale (in
-    // particular, /booth unmounts and remounts this component between
-    // games and the initial snapshot can be many minutes old by then).
-    // Diffing against that stale baseline would flash every change
-    // that's happened since the page first loaded, lighting up rows
-    // that aren't actually new.
+    // Animations + highlights should fire only on the FIRST poll
+    // after this component mounts. That moment lines up with the
+    // booth returning to attract after a game — which is exactly
+    // when the player wants to see what just changed. Subsequent
+    // polls update the data silently so the leaderboard doesn't
+    // flicker every 10 seconds.
+    //
+    // To diff the first poll against pre-game state (not just the
+    // server-rendered initialEntries), we stash the latest known
+    // keys in sessionStorage on every poll. When the component
+    // unmounts (game starts) and remounts (game ends), sessionStorage
+    // still has the pre-game snapshot, so the first poll's diff
+    // surfaces exactly what changed during the playthrough.
     let isFirstPoll = true;
+    const storageKey = `lb-baseline:${eventSlug}`;
+    let baselineKeys: Set<string>;
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      baselineKeys = stored
+        ? new Set(JSON.parse(stored) as string[])
+        : new Set(initialEntries.map(entryKey));
+    } catch {
+      baselineKeys = new Set(initialEntries.map(entryKey));
+    }
+    previousKeys.current = baselineKeys;
+
     const url = `/api/leaderboard?event=${encodeURIComponent(eventSlug)}`;
     const tick = async () => {
       try {
@@ -97,25 +115,34 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
         if (cancelled) return;
 
         const incoming = new Set(data.entries.map(entryKey));
-        if (isFirstPoll) {
-          previousKeys.current = incoming;
-          freshScreenNames.current = new Set();
-          setEntries(data.entries);
-          setTotal(data.total);
-          isFirstPoll = false;
-          return;
-        }
+
+        // Diff against the stored baseline only on the very first
+        // poll after mount. All subsequent polls update silently.
         const fresh = new Set<string>();
         const freshNames = new Set<string>();
-        for (const entry of data.entries) {
-          const key = entryKey(entry);
-          if (!previousKeys.current.has(key)) {
-            fresh.add(key);
-            freshNames.add(entry.screen_name);
+        if (isFirstPoll) {
+          for (const entry of data.entries) {
+            const key = entryKey(entry);
+            if (!previousKeys.current.has(key)) {
+              fresh.add(key);
+              freshNames.add(entry.screen_name);
+            }
           }
+          isFirstPoll = false;
         }
         previousKeys.current = incoming;
         freshScreenNames.current = freshNames;
+
+        // Persist the current state so the NEXT mount can diff
+        // against this poll instead of the server-rendered snapshot.
+        try {
+          sessionStorage.setItem(
+            storageKey,
+            JSON.stringify(Array.from(incoming)),
+          );
+        } catch {
+          // sessionStorage write failed (private mode?). Continue.
+        }
 
         setEntries(data.entries);
         setTotal(data.total);
@@ -139,11 +166,19 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
         // Network blip — keep showing the last good state.
       }
     };
+    // Fire the first poll immediately on mount so the post-game
+    // animation lands the moment the booth returns to attract — not
+    // 10 seconds later.
+    tick();
     const id = setInterval(tick, POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
       clearInterval(id);
     };
+    // initialEntries is read once via the closure inside the effect
+    // (for the sessionStorage fallback baseline); it doesn't need to
+    // re-trigger the effect when the parent passes a new reference.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventSlug]);
 
   if (entries.length === 0) {
