@@ -1070,12 +1070,33 @@ export class Game {
     ctx.fillRect(panelX + 6, panelY + 6, panelW - 12, 2);
     ctx.fillRect(panelX + 6, panelY + panelHeight - 8, panelW - 12, 2);
 
+    // Pixel-art Flo perched inside the left side of the dialog box.
+    // She animates the same as her in-game idle (leg shuffle + glint)
+    // so she feels alive, not posed. We draw her over the panel's
+    // light-cream background so she pops against the page chrome.
+    const floBaseX = panelX + (isPortrait ? 10 : 28);
+    const floBaseY = panelY + panelHeight - (isPortrait ? 16 : 24);
+    drawFlamingo(
+      ctx,
+      floBaseX,
+      floBaseY,
+      false,
+      this.player.legFrame,
+      this.player.sunglassesGlint,
+      this.frame,
+      false,
+    );
+
     // Word-wrap using actual measured glyph widths so text never
     // spills out of the box. Press Start 2P width-per-char varies by
     // font-size, so the previous "approxCharW" estimate was unreliable.
     const fontSize = isPortrait ? 10 : 14;
-    const contentX = panelX + 20;
-    const contentW = panelW - 40;
+    // Flo sits on the left side of the dialog box, peeking up to
+    // introduce herself. Text starts to the right of her so the two
+    // don't overlap.
+    const floReservedW = isPortrait ? 56 : 96;
+    const contentX = panelX + 20 + floReservedW;
+    const contentW = panelW - 40 - floReservedW;
     const lineHeight = fontSize + (isPortrait ? 8 : 12);
 
     ctx.save();
