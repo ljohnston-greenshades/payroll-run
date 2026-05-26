@@ -10,7 +10,7 @@ export interface HubSpotRegistration {
 const PORTAL_ID = process.env.HUBSPOT_PORTAL_ID;
 const FORM_ID = process.env.HUBSPOT_GAME_FORM_ID;
 const UTM_MEDIUM = process.env.UTM_MEDIUM || "event";
-const UTM_CAMPAIGN = process.env.UTM_CAMPAIGN || "payroll-run-game";
+const UTM_CAMPAIGN = process.env.UTM_CAMPAIGN || "payroll-runner-game";
 const GAME_URL =
   process.env.NEXT_PUBLIC_GAME_URL || "https://payrollrun.greenshades.com";
 
