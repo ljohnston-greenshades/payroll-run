@@ -196,19 +196,137 @@ export function drawPalmTree(
   drawRect(ctx, x + 1 * s, y - 22 * s, 3 * s, 3 * s, "#5c3d0a");
 }
 
+// Pixel-art ERROR enemy — an Excel-window-styled menace with a
+// flashing #REF! cell. Lighter visual noise than the PNG version so
+// it's readable from across the booth.
+function drawErrorEnemy(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  frame: number,
+): void {
+  // Drop shadow
+  drawRect(ctx, x + 2, y + 2, w, h, "rgba(0,0,0,0.4)");
+  // Window background
+  drawRect(ctx, x, y, w, h, "#f5f5f0");
+  // Green Excel-style title bar
+  const titleH = 8;
+  drawRect(ctx, x, y, w, titleH, "#1e7e3c");
+  drawRect(ctx, x + 1, y + 1, w - 2, 1, "#2a9c4e");
+  // Window control dots (close / restore)
+  drawRect(ctx, x + w - 14, y + 2, 4, 4, "#fff");
+  drawRect(ctx, x + w - 8, y + 2, 4, 4, "#fff");
+  // Cell grid (3 cols × 3 rows)
+  const gridY = y + titleH + 2;
+  const gridH = h - titleH - 4;
+  const colW = (w - 4) / 3;
+  const rowH = gridH / 3;
+  for (let i = 1; i < 3; i++) {
+    drawRect(ctx, x + 2 + colW * i, gridY, 1, gridH, "#c8c8c2");
+    drawRect(ctx, x + 2, gridY + rowH * i, w - 4, 1, "#c8c8c2");
+  }
+  // Flashing #REF! cell — slow pulse, no shake so it stays readable
+  const errorPulse = Math.sin(frame * 0.12) > 0 ? "#cc2222" : "#ee3333";
+  const cellX = x + 2;
+  const cellY = gridY;
+  const cellW = colW * 3 - 1;
+  const cellH = rowH - 1;
+  drawRect(ctx, cellX, cellY, cellW, cellH, errorPulse);
+  drawPixelText(
+    ctx,
+    "#REF!",
+    cellX + cellW / 2,
+    cellY + cellH / 2 + 1,
+    Math.min(10, Math.floor(rowH * 0.55)),
+    "#fff",
+    "center",
+  );
+  // A little ❌ red marks in the other cells to sell the "broken
+  // spreadsheet" energy without adding noise.
+  for (let r = 1; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      if ((r + c) % 2 === 0) continue;
+      const xx = x + 2 + colW * c + colW / 2;
+      const yy = gridY + rowH * r + rowH / 2;
+      drawPixelText(ctx, "x", xx, yy + 1, 6, "#cc2222", "center");
+    }
+  }
+}
+
+// Pixel-art AUDIT clipboard — a brown clipboard with a metal clip
+// and a red AUDIT stamp across the bottom. Reads cleanly at small
+// sizes and stays readable in motion (no shake).
+function drawAuditClipboard(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  _frame: number,
+): void {
+  // Drop shadow
+  drawRect(ctx, x + 2, y + 2, w, h, "rgba(0,0,0,0.4)");
+  // Clipboard board
+  drawRect(ctx, x, y + 5, w, h - 5, "#8b5a2b");
+  drawRect(ctx, x + 1, y + 6, w - 2, h - 7, "#c08040");
+  // Metal clip at the top
+  const clipW = Math.min(16, Math.floor(w * 0.35));
+  const clipX = x + (w - clipW) / 2;
+  drawRect(ctx, clipX, y, clipW, 6, "#6a6a6a");
+  drawRect(ctx, clipX + 1, y + 1, clipW - 2, 4, "#a0a0a0");
+  drawRect(ctx, clipX + clipW / 2 - 1, y + 1, 2, 3, "#4a4a4a");
+  // Paper
+  const paperX = x + 4;
+  const paperY = y + 8;
+  const paperW = w - 8;
+  const paperH = h - 12;
+  drawRect(ctx, paperX, paperY, paperW, paperH, "#f8f0d8");
+  // Document lines
+  for (let i = 0; i < 3; i++) {
+    drawRect(ctx, paperX + 3, paperY + 4 + i * 5, paperW - 6, 1, "#888");
+  }
+  // Red AUDIT stamp across the bottom of the paper
+  const stampW = paperW - 4;
+  const stampH = Math.min(11, Math.floor(paperH * 0.32));
+  const stampX = paperX + 2;
+  const stampY = paperY + paperH - stampH - 2;
+  drawRect(ctx, stampX, stampY, stampW, stampH, "#cc2222");
+  drawRect(ctx, stampX + 1, stampY + 1, stampW - 2, stampH - 2, "#a01818");
+  drawPixelText(
+    ctx,
+    "AUDIT",
+    paperX + paperW / 2,
+    stampY + stampH / 2 + 1,
+    Math.min(9, Math.floor(stampH * 0.7)),
+    "#fff",
+    "center",
+  );
+}
+
 export function drawObstacle(
   ctx: CanvasRenderingContext2D,
   obs: Obstacle,
-  _frame: number,
+  frame: number,
 ): void {
-  const img = getObstacleAsset(obs.type);
-  if (img) {
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(img, obs.x, obs.y, obs.w, obs.h);
+  if (obs.type === "coffee") {
+    // The spilled-coffee PNG carries enough personality on its own.
+    const img = getObstacleAsset("coffee");
+    if (img) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, obs.x, obs.y, obs.w, obs.h);
+      return;
+    }
+    // Fallback silhouette while the asset loads.
+    drawRect(ctx, obs.x, obs.y, obs.w, obs.h, "#6b4528");
     return;
   }
-  // Fallback silhouette until the PNG loads — keeps gameplay fair.
-  drawRect(ctx, obs.x, obs.y, obs.w, obs.h, "#cc2222");
+  if (obs.type === "error") {
+    drawErrorEnemy(ctx, obs.x, obs.y, obs.w, obs.h, frame);
+    return;
+  }
+  drawAuditClipboard(ctx, obs.x, obs.y, obs.w, obs.h, frame);
 }
 
 export function drawCollectible(
@@ -282,10 +400,12 @@ export function drawCollectible(
   // w2
   const cy = y + bob;
   drawRect(ctx, x, cy, 16 * s, 20 * s, Colors.white);
-  drawRect(ctx, x + 1 * s, cy + 1 * s, 14 * s, 3 * s, Colors.navy);
-  drawPixelText(ctx, "W-2", x + 8 * s, cy + 3 * s, 8, Colors.white, "center");
-  for (let i = 0; i < 4; i++) {
-    drawRect(ctx, x + 2 * s, cy + 6 * s + i * 3 * s, 10 * s, 1 * s, "#ccc");
+  // Taller navy header so the "W-2" text sits cleanly inside it
+  // instead of bleeding above and below into the white paper.
+  drawRect(ctx, x + 1 * s, cy + 1 * s, 14 * s, 5 * s, Colors.navy);
+  drawPixelText(ctx, "W-2", x + 8 * s, cy + 3 * s + s, 8, Colors.white, "center");
+  for (let i = 0; i < 3; i++) {
+    drawRect(ctx, x + 2 * s, cy + 9 * s + i * 3 * s, 10 * s, 1 * s, "#ccc");
   }
   ctx.fillStyle = "rgba(13,147,137,0.12)";
   ctx.beginPath();

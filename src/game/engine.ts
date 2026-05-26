@@ -99,8 +99,13 @@ const INTRO_PANELS: string[] = [
   "Watch out for the office chaos: spilled coffee, #REF! errors, and surprise audits.",
   "Ready, partner? Press JUMP to start the run!",
 ];
-// Slight pause after each panel finishes typing before auto-advancing.
-const INTRO_HOLD_FRAMES = 90;
+// Pause after each panel finishes typing before auto-advancing.
+// ~2.2 seconds — long enough to actually read and absorb a line.
+const INTRO_HOLD_FRAMES = 130;
+// Highlight ring advances to the next icon every this many frames.
+// Slow enough that eyes track each icon comfortably before the ring
+// moves on.
+const INTRO_RING_CYCLE_FRAMES = 75;
 // Probability bag: ~75% paychecks, 20% W-2s, 5% shields. Shields are
 // rare so they feel like a real reward when one shows up.
 const COLLECTIBLE_BAG: CollectibleType[] = [
@@ -1183,7 +1188,7 @@ export class Game {
     // Pulse highlight ring on the icon currently being "featured" —
     // cycles through all six over the intro so each one gets a moment.
     const allCount = catchTypes.length + dodgeTypes.length;
-    const cycle = Math.floor(this.frame / 30) % allCount;
+    const cycle = Math.floor(this.frame / INTRO_RING_CYCLE_FRAMES) % allCount;
     const isCatch = cycle < catchTypes.length;
     const localIdx = isCatch ? cycle : cycle - catchTypes.length;
     const ringCellX = isCatch
@@ -1219,10 +1224,10 @@ export class Game {
     );
   }
 
-  // Draws an obstacle PNG centered inside a cellSize × cellSize cell
-  // anchored at (cellX, stripY), with the image scaled uniformly to
-  // fit inside the cell — preserving the PNG's natural aspect ratio
-  // so it doesn't look squished.
+  // Draws an obstacle preview centered inside a cellSize × cellSize
+  // cell anchored at (cellX, stripY). Coffee uses a PNG so we
+  // preserve its aspect ratio; error/audit are pixel-art sprites
+  // designed to fill the box, so they render at full cellSize.
   private drawObstaclePreview(
     ctx: CanvasRenderingContext2D,
     type: ObstacleType,
@@ -1230,25 +1235,38 @@ export class Game {
     stripY: number,
     cellSize: number,
   ): void {
-    const img = getObstacleAsset(type);
-    if (!img) {
-      // Fallback: simple rect inside the cell while the PNG loads.
-      ctx.fillStyle = "rgba(204,34,34,0.5)";
-      ctx.fillRect(cellX + 4, stripY + 4, cellSize - 8, cellSize - 8);
+    if (type === "coffee") {
+      const img = getObstacleAsset("coffee");
+      if (!img) {
+        ctx.fillStyle = "rgba(107,69,40,0.5)";
+        ctx.fillRect(cellX + 4, stripY + 4, cellSize - 8, cellSize - 8);
+        return;
+      }
+      const aspect = img.naturalWidth / Math.max(1, img.naturalHeight);
+      let drawW = cellSize;
+      let drawH = cellSize;
+      if (aspect > 1) {
+        drawH = cellSize / aspect;
+      } else {
+        drawW = cellSize * aspect;
+      }
+      const drawX = cellX + (cellSize - drawW) / 2;
+      const drawY = stripY + (cellSize - drawH) / 2;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
       return;
     }
-    const aspect = img.naturalWidth / Math.max(1, img.naturalHeight);
-    let drawW = cellSize;
-    let drawH = cellSize;
-    if (aspect > 1) {
-      drawH = cellSize / aspect;
-    } else {
-      drawW = cellSize * aspect;
-    }
-    const drawX = cellX + (cellSize - drawW) / 2;
-    const drawY = stripY + (cellSize - drawH) / 2;
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    // Pixel-art obstacles fill the cell directly.
+    const obs: Obstacle = {
+      x: cellX,
+      y: stripY,
+      w: cellSize,
+      h: cellSize,
+      type,
+      nearMissed: false,
+      passed: false,
+    };
+    drawObstacle(ctx, obs, this.frame);
   }
 }
 
