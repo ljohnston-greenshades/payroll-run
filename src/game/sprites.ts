@@ -255,10 +255,10 @@ function drawErrorEnemy(
   }
 }
 
-// Pixel-art AUDIT clipboard — a brown clipboard with a metal clip
-// and a red AUDIT stamp across the bottom. Reads cleanly at small
-// sizes and stays readable in motion (no shake).
-function drawAuditClipboard(
+// Simple, scary red AUDIT warning sign. Replaces the more detailed
+// clipboard so the threat reads instantly at a glance. Designed to
+// work in both ground and air spawns (no post / mounting hardware).
+function drawAuditSign(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -267,42 +267,78 @@ function drawAuditClipboard(
   _frame: number,
 ): void {
   // Drop shadow
-  drawRect(ctx, x + 2, y + 2, w, h, "rgba(0,0,0,0.4)");
-  // Clipboard board
-  drawRect(ctx, x, y + 5, w, h - 5, "#8b5a2b");
-  drawRect(ctx, x + 1, y + 6, w - 2, h - 7, "#c08040");
-  // Metal clip at the top
-  const clipW = Math.min(16, Math.floor(w * 0.35));
-  const clipX = x + (w - clipW) / 2;
-  drawRect(ctx, clipX, y, clipW, 6, "#6a6a6a");
-  drawRect(ctx, clipX + 1, y + 1, clipW - 2, 4, "#a0a0a0");
-  drawRect(ctx, clipX + clipW / 2 - 1, y + 1, 2, 3, "#4a4a4a");
-  // Paper
-  const paperX = x + 4;
-  const paperY = y + 8;
-  const paperW = w - 8;
-  const paperH = h - 12;
-  drawRect(ctx, paperX, paperY, paperW, paperH, "#f8f0d8");
-  // Document lines
-  for (let i = 0; i < 3; i++) {
-    drawRect(ctx, paperX + 3, paperY + 4 + i * 5, paperW - 6, 1, "#888");
-  }
-  // Red AUDIT stamp across the bottom of the paper
-  const stampW = paperW - 4;
-  const stampH = Math.min(11, Math.floor(paperH * 0.32));
-  const stampX = paperX + 2;
-  const stampY = paperY + paperH - stampH - 2;
-  drawRect(ctx, stampX, stampY, stampW, stampH, "#cc2222");
-  drawRect(ctx, stampX + 1, stampY + 1, stampW - 2, stampH - 2, "#a01818");
+  drawRect(ctx, x + 2, y + 2, w, h, "rgba(0,0,0,0.45)");
+  // Darker red outer bezel
+  drawRect(ctx, x, y, w, h, "#7a0e0e");
+  // Bright red sign face
+  drawRect(ctx, x + 2, y + 2, w - 4, h - 4, "#cc1818");
+  // Lighter inner panel for depth
+  drawRect(ctx, x + 4, y + 4, w - 8, h - 8, "#e23030");
+  // White outline inside the red — classic warning-sign frame
+  drawRect(ctx, x + 5, y + 5, w - 10, 1, "#fff");
+  drawRect(ctx, x + 5, y + h - 6, w - 10, 1, "#fff");
+  drawRect(ctx, x + 5, y + 5, 1, h - 10, "#fff");
+  drawRect(ctx, x + w - 6, y + 5, 1, h - 10, "#fff");
+  // AUDIT text — big and bold
   drawPixelText(
     ctx,
     "AUDIT",
-    paperX + paperW / 2,
-    stampY + stampH / 2 + 1,
-    Math.min(9, Math.floor(stampH * 0.7)),
+    x + w / 2,
+    y + h / 2 + 1,
+    Math.min(16, Math.floor(h * 0.45)),
     "#fff",
     "center",
   );
+}
+
+// Pixel-art coffee spill — tipped mug with a brown puddle below.
+// Kept compact so it reads as a ground hazard at a glance. The mug
+// has X-eyes (dead) instead of the PNG's detailed face for clarity
+// at small sizes.
+function drawCoffeeSpill(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  _frame: number,
+): void {
+  // Brown puddle layers along the bottom — three tones for depth
+  const puddleY = Math.floor(y + h - 14);
+  drawRect(ctx, x + 2, puddleY, w - 4, 14, "#3d2817");
+  drawRect(ctx, x + 4, puddleY + 2, w - 8, 12, "#5b3c20");
+  drawRect(ctx, x + 10, puddleY + 4, w - 22, 8, "#6b4528");
+  // Splash droplets above the puddle
+  drawRect(ctx, x + 4, puddleY - 4, 3, 3, "#5b3c20");
+  drawRect(ctx, x + 12, puddleY - 6, 2, 2, "#6b4528");
+
+  // Tipped mug on the right end of the puddle
+  const mugW = Math.max(16, Math.min(22, Math.floor(w * 0.34)));
+  const mugH = Math.max(14, Math.floor(h * 0.55));
+  const mugX = x + w - mugW - 6;
+  const mugY = y + Math.floor(h * 0.18);
+
+  // Mug body (off-white)
+  drawRect(ctx, mugX, mugY, mugW, mugH, "#e8e8e0");
+  // Top edge
+  drawRect(ctx, mugX, mugY, mugW, 2, "#a8a8a4");
+  // Bottom edge
+  drawRect(ctx, mugX, mugY + mugH - 2, mugW, 2, "#888");
+  // Left rim (open mouth) facing the spilled puddle
+  drawRect(ctx, mugX, mugY, 2, mugH, "#666");
+  drawRect(ctx, mugX + 2, mugY + 2, 2, mugH - 4, "#2a1a0c");
+
+  // Right-side handle loop
+  drawRect(ctx, mugX + mugW, mugY + 3, 3, 3, "#e8e8e0");
+  drawRect(ctx, mugX + mugW + 3, mugY + 3, 2, mugH - 6, "#e8e8e0");
+  drawRect(ctx, mugX + mugW, mugY + mugH - 6, 3, 3, "#e8e8e0");
+
+  // X eyes on the mug body — "this mug is done". Skipped at very
+  // small sizes where they'd just look like noise.
+  if (mugW >= 16 && mugH >= 12) {
+    drawPixelText(ctx, "x", mugX + mugW * 0.45, mugY + mugH / 2 - 1, 6, "#2a1a0c", "center");
+    drawPixelText(ctx, "x", mugX + mugW * 0.78, mugY + mugH / 2 - 1, 6, "#2a1a0c", "center");
+  }
 }
 
 export function drawObstacle(
@@ -311,22 +347,14 @@ export function drawObstacle(
   frame: number,
 ): void {
   if (obs.type === "coffee") {
-    // The spilled-coffee PNG carries enough personality on its own.
-    const img = getObstacleAsset("coffee");
-    if (img) {
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(img, obs.x, obs.y, obs.w, obs.h);
-      return;
-    }
-    // Fallback silhouette while the asset loads.
-    drawRect(ctx, obs.x, obs.y, obs.w, obs.h, "#6b4528");
+    drawCoffeeSpill(ctx, obs.x, obs.y, obs.w, obs.h, frame);
     return;
   }
   if (obs.type === "error") {
     drawErrorEnemy(ctx, obs.x, obs.y, obs.w, obs.h, frame);
     return;
   }
-  drawAuditClipboard(ctx, obs.x, obs.y, obs.w, obs.h, frame);
+  drawAuditSign(ctx, obs.x, obs.y, obs.w, obs.h, frame);
 }
 
 export function drawCollectible(
@@ -336,7 +364,10 @@ export function drawCollectible(
 ): void {
   const x = col.x;
   const y = col.y;
-  const bob = Math.sin(frame * 0.08 + col.x * 0.1) * 3;
+  // Gentle hover — matches the bob the intro applies to obstacle
+  // previews so catch + dodge items feel like they're sharing the
+  // same breath of motion.
+  const bob = Math.sin(frame * 0.06 + col.x * 0.08) * 2;
   const s = 2;
   if (col.type === "paycheck") {
     const cy = y + bob;

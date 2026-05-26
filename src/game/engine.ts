@@ -45,7 +45,6 @@ import {
   drawPixelText,
   drawRect,
   drawShieldLogoBadge,
-  getObstacleAsset,
 } from "./sprites";
 import type {
   BgBuilding,
@@ -90,14 +89,17 @@ const OBSTACLE_WEIGHTS = [0.34, 0.33, 0.33];
 // Pokemon-style tutorial intro that plays once per game session
 // before the first run. Each entry is one panel that types out
 // character-by-character. Tone: friendly, payroll-pro inside-jokey.
-// Flo is the player's pixel-art sidekick — no employer, no gender,
-// just a flamingo trying to keep payroll running through the chaos.
 const INTRO_PANELS: string[] = [
-  "Meet Flo. Flo loves payday.",
-  "Help Flo collect paychecks and file W-2s for points!",
-  "Grab a GREENSHADES SHIELD for 5 seconds of pure invincibility.",
-  "Watch out for the office chaos: spilled coffee, #REF! errors, and surprise audits.",
-  "Ready, partner? Press JUMP to start the run!",
+  "Meet Flo, the fastest flamingo in payroll.",
+  "Flo had one simple job: keep payroll running, stay compliant, and make it to payday without a back-office meltdown.",
+  "But trouble is everywhere.",
+  "The IRS Audits are swooping in. The #REF! payroll errors are glitching through the system.",
+  "And worst of all... someone spilled coffee directly in the compliance zone.",
+  "One wrong move and Flo is cooked.",
+  "Help Flo jump over ground threats and duck under flying ones. Audits, errors, and spilled coffee are sudden death.",
+  "Grab paychecks for cash, W-2s for the big filing, and Greenshades Shields for invincibility.",
+  "Collect rewards in a row to build your combo and run up the score.",
+  "Payroll waits for no flamingo!",
 ];
 // Pause after each panel finishes typing before auto-advancing.
 // ~2.2 seconds — long enough to actually read and absorb a line.
@@ -1134,9 +1136,8 @@ export class Game {
   // intro screen. Cycles through paycheck → W-2 → shield (the
   // collectibles) and coffee → #REF! → audit (the obstacles) so the
   // player sees both sides of the brief in addition to reading it.
-  // Every icon sits in an iconSize × iconSize cell at (cellX, stripY).
-  // Contents are centered inside the cell with aspect preserved so
-  // non-square PNG art doesn't get squished.
+  // Every icon sits in an iconSize × iconSize cell at (cellX, stripY)
+  // with a label beneath naming the item.
   private drawIntroIconStrip(
     ctx: CanvasRenderingContext2D,
     isPortrait: boolean,
@@ -1146,15 +1147,28 @@ export class Game {
     const gap = isPortrait ? 12 : 24;
     const labelGap = isPortrait ? 12 : 18;
     const labelSize = isPortrait ? 7 : 10;
+    const itemLabelSize = isPortrait ? 5 : 7;
+    const itemLabelGap = isPortrait ? 10 : 14;
 
     const catchTypes: CollectibleType[] = ["paycheck", "w2", "shield"];
     const dodgeTypes: ObstacleType[] = ["coffee", "error", "audit"];
+    const catchLabels: Record<CollectibleType, string> = {
+      paycheck: "PAYCHECK",
+      w2: "W-2",
+      shield: "SHIELD",
+    };
+    const dodgeLabels: Record<ObstacleType, string> = {
+      coffee: "COFFEE",
+      error: "ERROR",
+      audit: "AUDIT",
+    };
+
     const groupW = catchTypes.length * iconSize + (catchTypes.length - 1) * gap;
     const groupGap = isPortrait ? 30 : 70;
     const totalW = groupW * 2 + groupGap;
     const startX = (W - totalW) / 2;
 
-    // CATCH group label + icons
+    // CATCH group label + icons + per-item labels
     drawPixelText(
       ctx,
       "CATCH",
@@ -1167,9 +1181,18 @@ export class Game {
     for (let i = 0; i < catchTypes.length; i++) {
       const cellX = startX + i * (iconSize + gap);
       this.drawCollectiblePreview(ctx, catchTypes[i], cellX, stripY, iconSize);
+      drawPixelText(
+        ctx,
+        catchLabels[catchTypes[i]],
+        cellX + iconSize / 2,
+        stripY + iconSize + itemLabelGap,
+        itemLabelSize,
+        Colors.green,
+        "center",
+      );
     }
 
-    // DODGE group label + icons
+    // DODGE group label + icons + per-item labels
     const dodgeX = startX + groupW + groupGap;
     drawPixelText(
       ctx,
@@ -1183,6 +1206,15 @@ export class Game {
     for (let i = 0; i < dodgeTypes.length; i++) {
       const cellX = dodgeX + i * (iconSize + gap);
       this.drawObstaclePreview(ctx, dodgeTypes[i], cellX, stripY, iconSize);
+      drawPixelText(
+        ctx,
+        dodgeLabels[dodgeTypes[i]],
+        cellX + iconSize / 2,
+        stripY + iconSize + itemLabelGap,
+        itemLabelSize,
+        "#ff6b6b",
+        "center",
+      );
     }
 
     // Pulse highlight ring on the icon currently being "featured" —
@@ -1224,10 +1256,10 @@ export class Game {
     );
   }
 
-  // Draws an obstacle preview centered inside a cellSize × cellSize
-  // cell anchored at (cellX, stripY). Coffee uses a PNG so we
-  // preserve its aspect ratio; error/audit are pixel-art sprites
-  // designed to fill the box, so they render at full cellSize.
+  // Draws an obstacle preview filling a cellSize × cellSize cell at
+  // (cellX, stripY). Adds the same gentle hover bob the collectibles
+  // already use, so catch and dodge items breathe in sync — keeps the
+  // intro strip visually unified.
   private drawObstaclePreview(
     ctx: CanvasRenderingContext2D,
     type: ObstacleType,
@@ -1235,31 +1267,10 @@ export class Game {
     stripY: number,
     cellSize: number,
   ): void {
-    if (type === "coffee") {
-      const img = getObstacleAsset("coffee");
-      if (!img) {
-        ctx.fillStyle = "rgba(107,69,40,0.5)";
-        ctx.fillRect(cellX + 4, stripY + 4, cellSize - 8, cellSize - 8);
-        return;
-      }
-      const aspect = img.naturalWidth / Math.max(1, img.naturalHeight);
-      let drawW = cellSize;
-      let drawH = cellSize;
-      if (aspect > 1) {
-        drawH = cellSize / aspect;
-      } else {
-        drawW = cellSize * aspect;
-      }
-      const drawX = cellX + (cellSize - drawW) / 2;
-      const drawY = stripY + (cellSize - drawH) / 2;
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(img, drawX, drawY, drawW, drawH);
-      return;
-    }
-    // Pixel-art obstacles fill the cell directly.
+    const bob = Math.sin(this.frame * 0.06 + cellX * 0.08) * 2;
     const obs: Obstacle = {
       x: cellX,
-      y: stripY,
+      y: stripY + bob,
       w: cellSize,
       h: cellSize,
       type,

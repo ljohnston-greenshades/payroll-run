@@ -47,12 +47,12 @@ export function RulesCard({ open, onClose }: Props) {
 
         <div className="space-y-4 px-5 py-4">
           <p className="font-serif text-sm text-white/85">
-            Keep payroll running. Jump over ground threats, duck under flying
-            ones, build combos by collecting items quickly.
+            Help Flo keep payroll running. Jump over ground threats, duck under
+            flying ones, and build combos by collecting items quickly.
           </p>
 
           <Section title="Collect" titleColor="text-gsGreen">
-            <Item name="Paychecks" desc="+$100 × your combo. Snag them in a row to multiply." />
+            <Item name="Paychecks" desc="+$100 × your combo. Keep the money flowing." />
             <Item name="W-2 Forms" desc="+$250 × your combo. The big payday filing." />
             <Item
               name="Greenshades Shields"
@@ -61,9 +61,18 @@ export function RulesCard({ open, onClose }: Props) {
           </Section>
 
           <Section title="Dodge" titleColor="text-red-300">
-            <Item name="IRS Audits" desc="Game over. Jump over the red sign." />
-            <Item name="Missed Deadlines" desc="Game over. Duck under the flying clock." />
-            <Item name="Garnishments" desc="Game over. Jump over the court order." />
+            <Item
+              name="Coffee Spills"
+              desc="Sudden death. Jump over the puddle in the compliance zone."
+            />
+            <Item
+              name="#REF! Errors"
+              desc="Sudden death. Glitches through the system on the ground or in the air."
+            />
+            <Item
+              name="IRS Audits"
+              desc="Sudden death. Red signs that swoop in low or fly at head height."
+            />
           </Section>
 
           <Section title="Controls" titleColor="text-white/70">
