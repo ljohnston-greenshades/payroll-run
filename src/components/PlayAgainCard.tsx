@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface Props {
   eventSlug: string;
@@ -33,6 +33,23 @@ export function PlayAgainCard({
   const [demoBusy, setDemoBusy] = useState(false);
   const [demoRequested, setDemoRequested] = useState(initialDemoRequested);
   const [demoError, setDemoError] = useState<string | null>(null);
+  // "Thanks for playing," after a fresh run; "Welcome back," on
+  // refresh or any subsequent visit. The just-played flag is set by
+  // the queue wait page right before it redirects here, and we
+  // consume + clear it on mount so a page refresh reverts to the
+  // standard welcome.
+  const [justPlayed, setJustPlayed] = useState(false);
+  useEffect(() => {
+    try {
+      const key = `just-played:${eventSlug}`;
+      if (sessionStorage.getItem(key)) {
+        setJustPlayed(true);
+        sessionStorage.removeItem(key);
+      }
+    } catch {
+      // sessionStorage unavailable — fall through to default greeting.
+    }
+  }, [eventSlug]);
 
   const onPlayAgain = async () => {
     setPlayBusy(true);
@@ -96,7 +113,7 @@ export function PlayAgainCard({
         {/* Welcome banner */}
         <div className="text-center">
           <p className="font-pixel text-xs uppercase tracking-widest text-white/65">
-            Welcome back,
+            {justPlayed ? "Thanks for playing," : "Welcome back,"}
           </p>
           <p className="mt-2 font-pixel text-4xl text-gsGreen sm:text-5xl">
             {screenName}
@@ -233,7 +250,7 @@ export function PlayAgainCard({
           <div className="flex-1">
             <p className="font-pixel text-base text-gsGreen">WIN AIRPODS</p>
             <p className="mt-1 font-serif text-xs text-white/65">
-              You&apos;re in the running. Winners notified after the event.
+              Top 3 scores — winners notified after the event.
             </p>
           </div>
         </div>

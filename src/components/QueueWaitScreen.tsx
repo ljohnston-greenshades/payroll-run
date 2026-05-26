@@ -53,8 +53,19 @@ export function QueueWaitScreen({ token }: Props) {
         setData(json);
         // When the run finishes, hop straight to the Play Again screen
         // for the player's own event so they don't have to re-scan the
-        // QR to queue up again.
+        // QR to queue up again. Set a one-shot flag so the destination
+        // shows "Thanks for playing," instead of "Welcome back," —
+        // PlayAgainCard clears the flag after reading it, so a refresh
+        // reverts to the standard welcome.
         if (json.status === "done") {
+          try {
+            sessionStorage.setItem(
+              `just-played:${json.eventSlug}`,
+              "1",
+            );
+          } catch {
+            // sessionStorage unavailable (rare) — non-blocking.
+          }
           router.replace(
             `/${encodeURIComponent(json.eventSlug)}?mode=booth`,
           );
