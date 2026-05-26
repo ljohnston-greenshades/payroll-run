@@ -255,9 +255,10 @@ function drawErrorEnemy(
   }
 }
 
-// Simple, scary red AUDIT warning sign. Replaces the more detailed
-// clipboard so the threat reads instantly at a glance. Designed to
-// work in both ground and air spawns (no post / mounting hardware).
+// Simple, scary AUDIT warning sign — same chunky red shape as the
+// original IRS sign with the word "AUDIT" in place of "IRS". A small
+// gray post stub anchors it visually whether it spawns on the ground
+// or floats mid-air.
 function drawAuditSign(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -266,79 +267,27 @@ function drawAuditSign(
   h: number,
   _frame: number,
 ): void {
-  // Drop shadow
-  drawRect(ctx, x + 2, y + 2, w, h, "rgba(0,0,0,0.45)");
-  // Darker red outer bezel
-  drawRect(ctx, x, y, w, h, "#7a0e0e");
+  // Sign occupies the upper ~78% of the box; gray post fills the rest.
+  const signH = Math.floor(h * 0.78);
+  const postH = h - signH;
+  const postW = 8;
+  const postX = x + (w - postW) / 2;
+  // Post
+  drawRect(ctx, postX, y + signH, postW, postH, "#888");
+  // Dark red outer border
+  drawRect(ctx, x, y, w, signH, "#7a0e0e");
   // Bright red sign face
-  drawRect(ctx, x + 2, y + 2, w - 4, h - 4, "#cc1818");
-  // Lighter inner panel for depth
-  drawRect(ctx, x + 4, y + 4, w - 8, h - 8, "#e23030");
-  // White outline inside the red — classic warning-sign frame
-  drawRect(ctx, x + 5, y + 5, w - 10, 1, "#fff");
-  drawRect(ctx, x + 5, y + h - 6, w - 10, 1, "#fff");
-  drawRect(ctx, x + 5, y + 5, 1, h - 10, "#fff");
-  drawRect(ctx, x + w - 6, y + 5, 1, h - 10, "#fff");
-  // AUDIT text — big and bold
+  drawRect(ctx, x + 4, y + 4, w - 8, signH - 8, "#ee3333");
+  // AUDIT text
   drawPixelText(
     ctx,
     "AUDIT",
     x + w / 2,
-    y + h / 2 + 1,
-    Math.min(16, Math.floor(h * 0.45)),
+    y + signH / 2 + 1,
+    Math.min(14, Math.floor(signH * 0.5)),
     "#fff",
     "center",
   );
-}
-
-// Pixel-art coffee spill — tipped mug with a brown puddle below.
-// Kept compact so it reads as a ground hazard at a glance. The mug
-// has X-eyes (dead) instead of the PNG's detailed face for clarity
-// at small sizes.
-function drawCoffeeSpill(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  _frame: number,
-): void {
-  // Brown puddle layers along the bottom — three tones for depth
-  const puddleY = Math.floor(y + h - 14);
-  drawRect(ctx, x + 2, puddleY, w - 4, 14, "#3d2817");
-  drawRect(ctx, x + 4, puddleY + 2, w - 8, 12, "#5b3c20");
-  drawRect(ctx, x + 10, puddleY + 4, w - 22, 8, "#6b4528");
-  // Splash droplets above the puddle
-  drawRect(ctx, x + 4, puddleY - 4, 3, 3, "#5b3c20");
-  drawRect(ctx, x + 12, puddleY - 6, 2, 2, "#6b4528");
-
-  // Tipped mug on the right end of the puddle
-  const mugW = Math.max(16, Math.min(22, Math.floor(w * 0.34)));
-  const mugH = Math.max(14, Math.floor(h * 0.55));
-  const mugX = x + w - mugW - 6;
-  const mugY = y + Math.floor(h * 0.18);
-
-  // Mug body (off-white)
-  drawRect(ctx, mugX, mugY, mugW, mugH, "#e8e8e0");
-  // Top edge
-  drawRect(ctx, mugX, mugY, mugW, 2, "#a8a8a4");
-  // Bottom edge
-  drawRect(ctx, mugX, mugY + mugH - 2, mugW, 2, "#888");
-  // Left rim (open mouth) facing the spilled puddle
-  drawRect(ctx, mugX, mugY, 2, mugH, "#666");
-  drawRect(ctx, mugX + 2, mugY + 2, 2, mugH - 4, "#2a1a0c");
-
-  // Right-side handle loop
-  drawRect(ctx, mugX + mugW, mugY + 3, 3, 3, "#e8e8e0");
-  drawRect(ctx, mugX + mugW + 3, mugY + 3, 2, mugH - 6, "#e8e8e0");
-  drawRect(ctx, mugX + mugW, mugY + mugH - 6, 3, 3, "#e8e8e0");
-
-  // X eyes on the mug body — "this mug is done". Skipped at very
-  // small sizes where they'd just look like noise.
-  if (mugW >= 16 && mugH >= 12) {
-    drawPixelText(ctx, "x", mugX + mugW * 0.45, mugY + mugH / 2 - 1, 6, "#2a1a0c", "center");
-    drawPixelText(ctx, "x", mugX + mugW * 0.78, mugY + mugH / 2 - 1, 6, "#2a1a0c", "center");
-  }
 }
 
 export function drawObstacle(
@@ -347,7 +296,15 @@ export function drawObstacle(
   frame: number,
 ): void {
   if (obs.type === "coffee") {
-    drawCoffeeSpill(ctx, obs.x, obs.y, obs.w, obs.h, frame);
+    // The spilled-coffee PNG carries enough personality on its own.
+    const img = getObstacleAsset("coffee");
+    if (img) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, obs.x, obs.y, obs.w, obs.h);
+      return;
+    }
+    // Fallback silhouette while the asset loads.
+    drawRect(ctx, obs.x, obs.y, obs.w, obs.h, "#6b4528");
     return;
   }
   if (obs.type === "error") {
