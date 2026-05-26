@@ -12,11 +12,14 @@ interface Props {
   initialEntries: LeaderboardEntry[];
   initialTotal: number;
   eventSlug: string;
-  // Optional hard cap on how many rows actually render. Without this,
-  // every entry the API returns gets a row — which pushes adjacent UI
-  // elements past the viewport on smaller screens. Set this to the
-  // number of rows the container can comfortably show.
+  // Optional hard ceiling on how many rows ever render. The actual
+  // visible count is the min of this and what the available container
+  // height can fit (measured at runtime via ResizeObserver). On a 1080p
+  // TV the natural cap is ~20; on a phone it might be ~6.
   maxVisible?: number;
+  // Called whenever the polled total changes, so the parent can show
+  // a live player count footer outside this component.
+  onTotalChange?: (total: number) => void;
 }
 
 interface LeaderboardResponse {
@@ -28,7 +31,13 @@ function entryKey(entry: LeaderboardEntry): string {
   return `${entry.screen_name}:${entry.high_score}`;
 }
 
-export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisible }: Props) {
+export function LeaderboardTV({
+  initialEntries,
+  initialTotal,
+  eventSlug,
+  maxVisible,
+  onTotalChange,
+}: Props) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>(initialEntries);
   const [total, setTotal] = useState(initialTotal);
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set());
@@ -40,6 +49,43 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
   // identity and animates from old rank to new rank.
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const lastTops = useRef<Map<string, number>>(new Map());
+
+  // Responsive row cap. We measure the container's actual height
+  // and divide by the actual rendered row height to figure out how
+  // many rows fit without pushing adjacent UI off the viewport. A
+  // ResizeObserver keeps this in sync across page-load, window
+  // resize, and orientation changes; a second layout effect keyed on
+  // `entries` re-measures after the first row has actually painted
+  // so the row-height read isn't stuck at the conservative fallback.
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [fittingRows, setFittingRows] = useState<number>(12);
+  const recalcFit = useRef<() => void>(() => {});
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const recalc = () => {
+      const h = container.clientHeight;
+      if (h <= 0) return;
+      const firstRow = rowRefs.current.values().next().value as
+        | HTMLTableRowElement
+        | undefined;
+      const rowH = firstRow?.offsetHeight ?? 0;
+      const perRow = rowH > 0 ? rowH : 48;
+      const fits = Math.max(3, Math.floor(h / perRow));
+      setFittingRows((prev) => (prev === fits ? prev : fits));
+    };
+    recalcFit.current = recalc;
+    recalc();
+    const ro = new ResizeObserver(recalc);
+    ro.observe(container);
+    window.addEventListener("resize", recalc);
+    window.addEventListener("orientationchange", recalc);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", recalc);
+      window.removeEventListener("orientationchange", recalc);
+    };
+  }, []);
   // Names of players whose score actually changed on the most recent
   // poll. Only THESE rows get animated — when a fresh PB displaces 5
   // other players, animating all 6 at once feels chaotic, so the
@@ -76,6 +122,13 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
     for (const key of Array.from(lastTops.current.keys())) {
       if (!liveScreenNames.has(key)) lastTops.current.delete(key);
     }
+  }, [entries]);
+
+  // After the entries actually paint, re-measure to refine the
+  // fitting-row count using the now-known row height. Cheap; just
+  // calls the same recalc the ResizeObserver runs.
+  useLayoutEffect(() => {
+    recalcFit.current();
   }, [entries]);
 
   useEffect(() => {
@@ -146,6 +199,7 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
 
         setEntries(data.entries);
         setTotal(data.total);
+        onTotalChange?.(data.total);
 
         if (fresh.size > 0) {
           setHighlighted((prev) => {
@@ -189,11 +243,18 @@ export function LeaderboardTV({ initialEntries, initialTotal, eventSlug, maxVisi
     );
   }
 
-  const visibleEntries =
-    typeof maxVisible === "number" ? entries.slice(0, maxVisible) : entries;
+  // Effective cap = the smaller of (a) what the container can fit,
+  // measured at runtime, and (b) the optional ceiling passed in via
+  // maxVisible. If neither is set, every API entry renders.
+  const measuredCap = fittingRows;
+  const effectiveCap =
+    typeof maxVisible === "number"
+      ? Math.min(maxVisible, measuredCap)
+      : measuredCap;
+  const visibleEntries = entries.slice(0, effectiveCap);
 
   return (
-    <div className="overflow-hidden">
+    <div ref={containerRef} className="h-full overflow-hidden">
       <table className="w-full">
         <tbody>
           {visibleEntries.map((entry, idx) => {
