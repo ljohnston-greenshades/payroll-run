@@ -45,6 +45,7 @@ import {
   drawPixelText,
   drawRect,
   drawShieldLogoBadge,
+  getObstacleAsset,
 } from "./sprites";
 import type {
   BgBuilding,
@@ -93,7 +94,7 @@ const INTRO_PANELS: string[] = [
   "Meet Flo, the fastest flamingo in payroll.",
   "Flo had one simple job: keep payroll running, stay compliant, and make it to payday without a back-office meltdown.",
   "But trouble is everywhere.",
-  "The IRS Audits are swooping in. The #REF! payroll errors are glitching through the system.",
+  "The IRS Audits are swooping in. The payroll errors are glitching through the system.",
   "And worst of all... someone spilled coffee directly in the compliance zone.",
   "One wrong move and Flo is cooked.",
   "Help Flo jump over ground threats and duck under flying ones. Audits, errors, and spilled coffee are sudden death.",
@@ -401,7 +402,14 @@ export class Game {
         }
       } else {
         if (this.introCharCount < fullLen) {
-          if (this.frame % 2 === 0) this.introCharCount++;
+          if (this.frame % 2 === 0) {
+            this.introCharCount++;
+            if (this.introCharCount >= fullLen) {
+              // Typing just completed — start the hold timer so the
+              // panel doesn't auto-advance instantly on the next frame.
+              this.introHoldFrames = INTRO_HOLD_FRAMES;
+            }
+          }
         } else if (this.introHoldFrames > 0) {
           this.introHoldFrames--;
         } else {
@@ -1256,10 +1264,11 @@ export class Game {
     );
   }
 
-  // Draws an obstacle preview filling a cellSize × cellSize cell at
-  // (cellX, stripY). Adds the same gentle hover bob the collectibles
-  // already use, so catch and dodge items breathe in sync — keeps the
-  // intro strip visually unified.
+  // Draws an obstacle preview inside a cellSize × cellSize cell at
+  // (cellX, stripY). Coffee is a non-square PNG so we preserve its
+  // aspect ratio; the pixel sprites fill the cell directly. Both
+  // share the same gentle hover bob the collectibles use, so the
+  // catch + dodge rows breathe in sync.
   private drawObstaclePreview(
     ctx: CanvasRenderingContext2D,
     type: ObstacleType,
@@ -1268,6 +1277,27 @@ export class Game {
     cellSize: number,
   ): void {
     const bob = Math.sin(this.frame * 0.06 + cellX * 0.08) * 2;
+    if (type === "coffee") {
+      const img = getObstacleAsset("coffee");
+      if (!img) {
+        ctx.fillStyle = "rgba(107,69,40,0.5)";
+        ctx.fillRect(cellX + 4, stripY + 4 + bob, cellSize - 8, cellSize - 8);
+        return;
+      }
+      const aspect = img.naturalWidth / Math.max(1, img.naturalHeight);
+      let drawW = cellSize;
+      let drawH = cellSize;
+      if (aspect > 1) {
+        drawH = cellSize / aspect;
+      } else {
+        drawW = cellSize * aspect;
+      }
+      const drawX = cellX + (cellSize - drawW) / 2;
+      const drawY = stripY + (cellSize - drawH) / 2 + bob;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      return;
+    }
     const obs: Obstacle = {
       x: cellX,
       y: stripY + bob,
