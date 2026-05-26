@@ -101,6 +101,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await markHubspotSubmitted(player.id);
   }
 
+  // Fire off the registration to Clay's webhook so it can enrich
+  // industry + employee count and assign the contact owner in
+  // HubSpot before the player finishes their game. Non-blocking
+  // (no await) — registration must complete fast even if Clay is
+  // slow. Errors are swallowed; downstream "Schedule with X"
+  // flow tolerates an unrouted lead by falling back to the generic
+  // demo CTA + Slack QB.
+  const clayUrl = process.env.CLAY_WEBHOOK_URL;
+  if (clayUrl) {
+    fetch(clayUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName,
+        lastName,
+        email,
+        company,
+        eventSlug: event.slug,
+        eventName: event.name,
+      }),
+    }).catch((err) => console.warn("Clay webhook failed:", err));
+  }
+
   if (queueing) {
     const entry = await enqueueForBooth(
       player.id,

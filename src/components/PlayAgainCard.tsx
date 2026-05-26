@@ -51,6 +51,61 @@ export function PlayAgainCard({
     }
   }, [eventSlug]);
 
+  // Lead-routing state. Polls /api/lead-status while the page is
+  // open so the demo CTA can flip from generic ("SCHEDULE A DEMO")
+  // to rep-specific ("SCHEDULE WITH WILL →") the moment Clay
+  // finishes enrichment + routing in HubSpot.
+  const [routedRep, setRoutedRep] = useState<{
+    firstName: string;
+    meetingUrl: string;
+  } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const stop = () => {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+    const tick = async () => {
+      try {
+        const res = await fetch("/api/lead-status", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as
+          | { status: "pending" }
+          | { status: "routed_unknown"; owner: { firstName: string } }
+          | {
+              status: "routed";
+              owner: { firstName: string };
+              meetingUrl: string;
+            };
+        if (cancelled) return;
+        if (data.status === "routed") {
+          setRoutedRep({
+            firstName: data.owner.firstName || "your rep",
+            meetingUrl: data.meetingUrl,
+          });
+          // Terminal state — no need to keep polling HubSpot.
+          stop();
+        } else if (data.status === "routed_unknown") {
+          // Owner assigned but we don't have their meeting URL.
+          // Stop polling; the generic demo CTA remains so the
+          // events team gets a Slack ping when the player taps.
+          stop();
+        }
+      } catch {
+        // Network blip — keep polling.
+      }
+    };
+    tick();
+    intervalId = setInterval(tick, 5_000);
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, []);
+
   const onPlayAgain = async () => {
     setPlayBusy(true);
     setPlayError(null);
@@ -73,6 +128,9 @@ export function PlayAgainCard({
     }
   };
 
+  // Tap handler when no rep is routed yet. Marks demo_requested
+  // (so the events team sees it in admin + Slack) and flips the
+  // card to the "we'll reach out" confirmation.
   const onRequestDemo = async () => {
     setDemoBusy(true);
     setDemoError(null);
@@ -89,6 +147,21 @@ export function PlayAgainCard({
     } finally {
       setDemoBusy(false);
     }
+  };
+
+  // Tap handler when a rep IS routed. Opens their HubSpot Meetings
+  // page in a new tab so the player can book directly, and marks
+  // demo_requested for analytics. The card stays as-is so the
+  // player can re-open if they accidentally close the tab.
+  const onBookWithRep = async () => {
+    if (!routedRep) return;
+    // Open in a new tab synchronously inside the click handler —
+    // browsers block window.open() called from inside an awaited
+    // promise even if the user clicked.
+    window.open(routedRep.meetingUrl, "_blank", "noopener");
+    // Fire-and-forget the analytics POST so it doesn't delay the
+    // calendar opening.
+    fetch("/api/demo-request", { method: "POST" }).catch(() => {});
   };
 
   const onSwitchPlayer = async () => {
@@ -197,8 +270,36 @@ export function PlayAgainCard({
           </p>
         ) : null}
 
-        {/* Get a real compliance shield — white card-button */}
-        {demoRequested ? (
+        {/* Demo CTA — three possible states:
+             1. Rep routed: "SCHEDULE WITH WILL →" opens their
+                HubSpot meeting page in a new tab. Stays clickable
+                in case the player needs to re-open.
+             2. Not routed, demo not yet requested: generic
+                "SCHEDULE A DEMO →" button. Tap fires the request,
+                events team gets a Slack ping, button flips to
+                confirmation.
+             3. Not routed, demo requested: confirmation card. */}
+        {routedRep ? (
+          <button
+            type="button"
+            onClick={onBookWithRep}
+            className="mt-3 flex w-full items-center gap-4 rounded-lg bg-white p-4 text-left shadow-lg shadow-black/20 transition hover:bg-white/95 active:translate-y-px"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gsGreen">
+              <ShieldIcon className="h-6 w-6 text-white" />
+            </span>
+            <span className="flex-1">
+              <span className="flex items-center justify-between font-pixel text-base text-gsNavy">
+                <span>SCHEDULE WITH {routedRep.firstName.toUpperCase()}</span>
+                <span aria-hidden>→</span>
+              </span>
+              <span className="mt-1 block font-serif text-xs text-gsNavy/75">
+                Pick a time that works for you. {routedRep.firstName} will
+                come ready to show what Greenshades can do for your team.
+              </span>
+            </span>
+          </button>
+        ) : demoRequested ? (
           <div className="mt-3 flex items-center gap-4 rounded-lg border border-gsGreen/40 bg-gsGreen/10 p-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gsGreen text-gsNavy">
               <CheckIcon className="h-6 w-6" />
