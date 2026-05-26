@@ -199,20 +199,16 @@ export function drawPalmTree(
 export function drawObstacle(
   ctx: CanvasRenderingContext2D,
   obs: Obstacle,
-  frame: number,
+  _frame: number,
 ): void {
-  const x = obs.x;
-  const y = obs.y;
-  const bob = obs.type === "coffee" ? 0 : Math.sin(frame * 0.1 + obs.x) * 3;
-  const drawY = y + bob;
   const img = getObstacleAsset(obs.type);
   if (img) {
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(img, x, drawY, obs.w, obs.h);
+    ctx.drawImage(img, obs.x, obs.y, obs.w, obs.h);
     return;
   }
   // Fallback silhouette until the PNG loads — keeps gameplay fair.
-  drawRect(ctx, x, drawY, obs.w, obs.h, "#cc2222");
+  drawRect(ctx, obs.x, obs.y, obs.w, obs.h, "#cc2222");
 }
 
 export function drawCollectible(

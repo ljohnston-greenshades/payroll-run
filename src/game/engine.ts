@@ -45,6 +45,7 @@ import {
   drawPixelText,
   drawRect,
   drawShieldLogoBadge,
+  getObstacleAsset,
 } from "./sprites";
 import type {
   BgBuilding,
@@ -648,11 +649,8 @@ export class Game {
   } {
     const x = obs.x;
     const y = obs.y;
-    const bob = obs.type === "coffee" ? 0 : Math.sin(this.frame * 0.1 + obs.x) * 3;
     // PNG art doesn't always fill its bounding box edge-to-edge —
     // shrink the hit region by a few px so near-misses feel fair.
-    // Coffee gets a flatter, wider hitbox biased to the bottom since
-    // the spill puddle is its lower half.
     if (obs.type === "coffee") {
       return {
         boxes: [
@@ -663,7 +661,7 @@ export class Game {
     }
     return {
       boxes: [
-        { x: x + 6, y: y + bob + 6, w: obs.w - 12, h: obs.h - 12 },
+        { x: x + 6, y: y + 6, w: obs.w - 12, h: obs.h - 12 },
       ],
     };
   }
@@ -671,8 +669,7 @@ export class Game {
   // Bounding box of an obstacle for near-miss / spawn-overlap checks
   // where we just need a single rough region.
   private obstacleBounds(obs: Obstacle): Box {
-    const bob = obs.type === "coffee" ? 0 : Math.sin(this.frame * 0.1 + obs.x) * 3;
-    return { x: obs.x, y: obs.y + bob, w: obs.w, h: obs.h };
+    return { x: obs.x, y: obs.y, w: obs.w, h: obs.h };
   }
 
   private spawnObstacle(): void {
@@ -691,9 +688,12 @@ export class Game {
     let y = GROUND_Y;
     if (type === "coffee") {
       // Spilled coffee always sits on the ground — a floating puddle
-      // would break the gag.
+      // would break the gag. The PNG has decorative space around the
+      // spill, so push it slightly into the ground line so the visual
+      // puddle sits flush on top of the sand.
       h = 36;
       w = 64;
+      y = GROUND_Y + 10;
     } else {
       // error / audit can spawn ground OR mid-air. Roughly 50/50; in
       // air they float at duck height like the old deadline clock.
@@ -1021,6 +1021,12 @@ export class Game {
     const visible = text.slice(0, this.introCharCount);
     const isPortrait = H > W;
 
+    // Darken the underlying game scene so the brief content is
+    // easier to read. Removed automatically when the state flips
+    // to "playing".
+    ctx.fillStyle = "rgba(6,15,30,0.65)";
+    ctx.fillRect(0, 0, W, H);
+
     this.drawIntroIconStrip(ctx, isPortrait);
 
     // Text panel — Pokemon-style box at the bottom of the screen.
@@ -1123,21 +1129,23 @@ export class Game {
   // intro screen. Cycles through paycheck → W-2 → shield (the
   // collectibles) and coffee → #REF! → audit (the obstacles) so the
   // player sees both sides of the brief in addition to reading it.
+  // Every icon sits in an iconSize × iconSize cell at (cellX, stripY).
+  // Contents are centered inside the cell with aspect preserved so
+  // non-square PNG art doesn't get squished.
   private drawIntroIconStrip(
     ctx: CanvasRenderingContext2D,
     isPortrait: boolean,
   ): void {
-    const stripY = isPortrait ? 70 : 70;
-    const iconSize = isPortrait ? 32 : 56;
-    const gap = isPortrait ? 14 : 26;
-    const labelGap = isPortrait ? 10 : 16;
-    const labelSize = isPortrait ? 6 : 9;
+    const stripY = isPortrait ? 80 : 80;
+    const iconSize = isPortrait ? 36 : 64;
+    const gap = isPortrait ? 12 : 24;
+    const labelGap = isPortrait ? 12 : 18;
+    const labelSize = isPortrait ? 7 : 10;
 
-    // Two groups side by side: CATCH (left), DODGE (right).
     const catchTypes: CollectibleType[] = ["paycheck", "w2", "shield"];
     const dodgeTypes: ObstacleType[] = ["coffee", "error", "audit"];
     const groupW = catchTypes.length * iconSize + (catchTypes.length - 1) * gap;
-    const groupGap = isPortrait ? 30 : 60;
+    const groupGap = isPortrait ? 30 : 70;
     const totalW = groupW * 2 + groupGap;
     const startX = (W - totalW) / 2;
 
@@ -1152,8 +1160,8 @@ export class Game {
       "center",
     );
     for (let i = 0; i < catchTypes.length; i++) {
-      const cx = startX + i * (iconSize + gap);
-      this.drawCollectiblePreview(ctx, catchTypes[i], cx, stripY, iconSize);
+      const cellX = startX + i * (iconSize + gap);
+      this.drawCollectiblePreview(ctx, catchTypes[i], cellX, stripY, iconSize);
     }
 
     // DODGE group label + icons
@@ -1168,18 +1176,17 @@ export class Game {
       "center",
     );
     for (let i = 0; i < dodgeTypes.length; i++) {
-      const cx = dodgeX + i * (iconSize + gap);
-      this.drawObstaclePreview(ctx, dodgeTypes[i], cx, stripY, iconSize);
+      const cellX = dodgeX + i * (iconSize + gap);
+      this.drawObstaclePreview(ctx, dodgeTypes[i], cellX, stripY, iconSize);
     }
 
     // Pulse highlight ring on the icon currently being "featured" —
     // cycles through all six over the intro so each one gets a moment.
-    const cycle = Math.floor(this.frame / 30) % 6;
     const allCount = catchTypes.length + dodgeTypes.length;
-    const idx = cycle % allCount;
-    const isCatch = idx < catchTypes.length;
-    const localIdx = isCatch ? idx : idx - catchTypes.length;
-    const ringX = isCatch
+    const cycle = Math.floor(this.frame / 30) % allCount;
+    const isCatch = cycle < catchTypes.length;
+    const localIdx = isCatch ? cycle : cycle - catchTypes.length;
+    const ringCellX = isCatch
       ? startX + localIdx * (iconSize + gap)
       : dodgeX + localIdx * (iconSize + gap);
     const pulse = (Math.sin(this.frame * 0.18) + 1) / 2;
@@ -1187,41 +1194,61 @@ export class Game {
     ctx.strokeStyle = isCatch ? Colors.green : "#ff6b6b";
     ctx.lineWidth = 2 + pulse * 2;
     ctx.globalAlpha = 0.4 + pulse * 0.5;
-    ctx.strokeRect(ringX - 4, stripY - 4, iconSize + 8, iconSize + 8);
+    ctx.strokeRect(ringCellX - 4, stripY - 4, iconSize + 8, iconSize + 8);
     ctx.restore();
   }
 
+  // Draws a collectible centered inside a cellSize × cellSize cell
+  // anchored at (cellX, stripY). The pixel-drawn collectibles use a
+  // 32 × 24 visual footprint regardless of cellSize.
   private drawCollectiblePreview(
     ctx: CanvasRenderingContext2D,
     type: CollectibleType,
-    x: number,
-    y: number,
-    size: number,
+    cellX: number,
+    stripY: number,
+    cellSize: number,
   ): void {
+    const visW = 32;
+    const visH = 24;
+    const drawX = cellX + (cellSize - visW) / 2;
+    const drawY = stripY + (cellSize - visH) / 2;
     drawCollectible(
       ctx,
-      { x: x - 16, y: y - 12, w: 32, h: 24, type, collected: false },
+      { x: drawX, y: drawY, w: visW, h: visH, type, collected: false },
       this.frame,
     );
   }
 
+  // Draws an obstacle PNG centered inside a cellSize × cellSize cell
+  // anchored at (cellX, stripY), with the image scaled uniformly to
+  // fit inside the cell — preserving the PNG's natural aspect ratio
+  // so it doesn't look squished.
   private drawObstaclePreview(
     ctx: CanvasRenderingContext2D,
     type: ObstacleType,
-    x: number,
-    y: number,
-    size: number,
+    cellX: number,
+    stripY: number,
+    cellSize: number,
   ): void {
-    const obs: Obstacle = {
-      x,
-      y,
-      w: size,
-      h: size,
-      type,
-      nearMissed: false,
-      passed: false,
-    };
-    drawObstacle(ctx, obs, this.frame);
+    const img = getObstacleAsset(type);
+    if (!img) {
+      // Fallback: simple rect inside the cell while the PNG loads.
+      ctx.fillStyle = "rgba(204,34,34,0.5)";
+      ctx.fillRect(cellX + 4, stripY + 4, cellSize - 8, cellSize - 8);
+      return;
+    }
+    const aspect = img.naturalWidth / Math.max(1, img.naturalHeight);
+    let drawW = cellSize;
+    let drawH = cellSize;
+    if (aspect > 1) {
+      drawH = cellSize / aspect;
+    } else {
+      drawW = cellSize * aspect;
+    }
+    const drawX = cellX + (cellSize - drawW) / 2;
+    const drawY = stripY + (cellSize - drawH) / 2;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
   }
 }
 
