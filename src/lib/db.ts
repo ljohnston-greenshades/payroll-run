@@ -64,6 +64,16 @@ export interface Player {
   session_token: string;
   current_game_started_at: Date | null;
   last_score_submitted_at: Date | null;
+  demo_requested: boolean;
+  demo_requested_at: Date | null;
+}
+
+export async function markDemoRequested(playerId: string): Promise<void> {
+  await sql`
+    UPDATE players
+    SET demo_requested = TRUE, demo_requested_at = NOW()
+    WHERE id = ${playerId}
+  `;
 }
 
 export interface Score {
@@ -241,6 +251,7 @@ export interface PlayerWithStats {
   company: string | null;
   screen_name: string;
   hubspot_submitted: boolean;
+  demo_requested: boolean;
   created_at: Date;
   best_score: number | null;
   game_count: number;
@@ -252,7 +263,7 @@ export async function getAllPlayersWithStats(
   const { rows } = await sql<PlayerWithStats>`
     SELECT
       p.id, p.first_name, p.last_name, p.email, p.company, p.screen_name,
-      p.hubspot_submitted, p.created_at,
+      p.hubspot_submitted, p.demo_requested, p.created_at,
       MAX(s.score) AS best_score,
       COUNT(s.id)::int AS game_count
     FROM players p

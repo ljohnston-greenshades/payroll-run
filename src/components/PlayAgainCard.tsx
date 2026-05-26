@@ -9,7 +9,17 @@ interface Props {
   personalBest?: number;
   personalRank?: number;
   personalTotal?: number;
+  // Whether this player has already tapped "Request a Demo" — read
+  // from the players row server-side so a refresh shows the right
+  // confirmation state.
+  initialDemoRequested?: boolean;
 }
+
+const BULLETS = [
+  "Built for payroll complexity",
+  "Compliance-first by design",
+  "Integrates with your systems",
+];
 
 export function PlayAgainCard({
   eventSlug,
@@ -17,14 +27,18 @@ export function PlayAgainCard({
   personalBest = 0,
   personalRank = 0,
   personalTotal = 0,
+  initialDemoRequested = false,
 }: Props) {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [playBusy, setPlayBusy] = useState(false);
+  const [playError, setPlayError] = useState<string | null>(null);
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [demoRequested, setDemoRequested] = useState(initialDemoRequested);
+  const [demoError, setDemoError] = useState<string | null>(null);
 
   const onPlayAgain = async () => {
-    setBusy(true);
-    setError(null);
+    setPlayBusy(true);
+    setPlayError(null);
     try {
       const res = await fetch("/api/queue/rejoin", {
         method: "POST",
@@ -33,14 +47,32 @@ export function PlayAgainCard({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.queueToken) {
-        setError("Couldn't get you in line. Please try again.");
-        setBusy(false);
+        setPlayError("Couldn't get you in line. Please try again.");
+        setPlayBusy(false);
         return;
       }
       router.push(`/queue/${data.queueToken}`);
     } catch {
-      setError("Network error. Please try again.");
-      setBusy(false);
+      setPlayError("Network error. Please try again.");
+      setPlayBusy(false);
+    }
+  };
+
+  const onRequestDemo = async () => {
+    setDemoBusy(true);
+    setDemoError(null);
+    try {
+      const res = await fetch("/api/demo-request", { method: "POST" });
+      if (!res.ok) {
+        setDemoError("Couldn't send. Please try again.");
+        setDemoBusy(false);
+        return;
+      }
+      setDemoRequested(true);
+    } catch {
+      setDemoError("Network error. Please try again.");
+    } finally {
+      setDemoBusy(false);
     }
   };
 
@@ -57,60 +89,106 @@ export function PlayAgainCard({
   const hasStats = personalBest > 0 && personalRank > 0 && personalTotal > 0;
 
   return (
-    <div className="w-full max-w-md text-center">
-      <p className="font-pixel text-xs uppercase tracking-widest text-white/55">
-        Welcome back
-      </p>
-      <p className="mt-2 font-pixel text-3xl text-gsGreen">{screenName}</p>
+    <div className="w-full max-w-md">
+      <div className="text-center">
+        <p className="font-pixel text-[0.6rem] uppercase tracking-widest text-white/55">
+          Welcome back
+        </p>
+        <p className="mt-1 font-pixel text-2xl text-gsGreen">{screenName}</p>
+      </div>
 
       {hasStats ? (
-        <div className="mx-auto mt-5 grid max-w-xs grid-cols-2 gap-3 rounded-md border border-gsGreen/30 bg-white/[0.04] p-4">
-          <div>
-            <p className="font-pixel text-[0.55rem] uppercase tracking-widest text-white/55">
-              Your best
-            </p>
-            <p className="mt-1 font-pixel text-lg text-gsGreen">
+        <div className="mt-3 rounded-md border border-gsGreen/30 bg-white/[0.04] px-4 py-2.5 text-center">
+          <p className="font-pixel text-xs text-white">
+            <span className="text-white/55">Best </span>
+            <span className="text-gsGreen">
               ${personalBest.toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <p className="font-pixel text-[0.55rem] uppercase tracking-widest text-white/55">
-              Your rank
-            </p>
-            <p className="mt-1 font-pixel text-lg text-gsGreen">
+            </span>
+            <span className="text-white/30"> · </span>
+            <span className="text-gsGreen">
               #{personalRank}
-              <span className="ml-1 text-xs text-white/55">
-                / {personalTotal}
-              </span>
-            </p>
-          </div>
+            </span>
+            <span className="text-white/55">
+              {" "}
+              of {personalTotal}
+            </span>
+          </p>
         </div>
       ) : null}
-
-      <p className="mt-5 font-serif text-base text-white/85">
-        Ready for another run? Tap below and we&apos;ll put you back in line.
-        No need to fill out the form again.
-      </p>
 
       <button
         type="button"
         onClick={onPlayAgain}
-        disabled={busy}
-        className="mt-6 w-full rounded-md bg-gsGreen px-6 py-3 font-pixel text-sm uppercase tracking-wider text-gsNavy shadow-lg shadow-gsGreen/20 transition hover:brightness-110 hover:shadow-gsGreen/40 active:translate-y-px disabled:opacity-60"
+        disabled={playBusy}
+        className="mt-4 w-full rounded-md bg-gsGreen px-6 py-3 font-pixel text-sm uppercase tracking-wider text-gsNavy shadow-lg shadow-gsGreen/20 transition hover:brightness-110 hover:shadow-gsGreen/40 active:translate-y-px disabled:opacity-60"
       >
-        {busy ? "Getting in line…" : "Play Again →"}
+        {playBusy ? "Getting in line…" : "Play Again →"}
       </button>
 
-      {error ? (
-        <p className="mt-3 text-sm text-red-300" role="alert">
-          {error}
+      {playError ? (
+        <p className="mt-2 text-center text-xs text-red-300" role="alert">
+          {playError}
         </p>
       ) : null}
+
+      {/* Demo callout — visually distinct card so it reads as a
+          related-but-separate offer, not part of the game UI. */}
+      <div className="mt-5 rounded-lg border border-gsGreen/40 bg-gsNavy/60 p-4">
+        <p className="font-pixel text-xs uppercase tracking-widest text-gsGreen">
+          Thanks for playing!
+        </p>
+        <p className="mt-1.5 font-serif text-base text-white">
+          Want a real Compliance Shield for your team?
+        </p>
+        <ul className="mt-3 space-y-1.5">
+          {BULLETS.map((b) => (
+            <li
+              key={b}
+              className="flex items-start gap-2 font-serif text-sm text-white/80"
+            >
+              <span aria-hidden className="mt-0.5 text-gsGreen">
+                ✓
+              </span>
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+
+        {demoRequested ? (
+          <div
+            className="mt-3 rounded-md border border-gsGreen/50 bg-gsGreen/10 px-3 py-2 text-center"
+            role="status"
+            aria-live="polite"
+          >
+            <p className="font-pixel text-[0.6rem] uppercase tracking-widest text-gsGreen">
+              You&apos;re on the list
+            </p>
+            <p className="mt-0.5 font-serif text-xs text-white/85">
+              We&apos;ll reach out within 24 hours.
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onRequestDemo}
+            disabled={demoBusy}
+            className="mt-3 w-full rounded-md border border-gsGreen px-4 py-2.5 font-pixel text-xs uppercase tracking-wider text-gsGreen transition hover:bg-gsGreen/10 active:translate-y-px disabled:opacity-60"
+          >
+            {demoBusy ? "Sending…" : "Request a Demo →"}
+          </button>
+        )}
+
+        {demoError ? (
+          <p className="mt-2 text-center text-xs text-red-300" role="alert">
+            {demoError}
+          </p>
+        ) : null}
+      </div>
 
       <button
         type="button"
         onClick={onSwitchPlayer}
-        className="mt-4 w-full text-center text-xs text-white/55 underline-offset-2 hover:text-white/80 hover:underline"
+        className="mt-3 w-full text-center text-xs text-white/50 underline-offset-2 hover:text-white/80 hover:underline"
       >
         Not you? Start over.
       </button>

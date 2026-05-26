@@ -18,6 +18,23 @@ export function getGsLogo(): HTMLImageElement | null {
   return gsLogoReady ? gsLogo : null;
 }
 
+// Polished Flo PNG (the same asset shown on the registration page),
+// used in the intro dialog to introduce her with more personality
+// than the in-game pixel sprite affords.
+let floImg: HTMLImageElement | null = null;
+let floImgReady = false;
+export function getFloImage(): HTMLImageElement | null {
+  if (typeof window === "undefined") return null;
+  if (!floImg) {
+    floImg = new Image();
+    floImg.onload = () => {
+      floImgReady = true;
+    };
+    floImg.src = "/flo.png";
+  }
+  return floImgReady ? floImg : null;
+}
+
 // Lazily-loaded obstacle artwork. Each PNG lives in /public; we cache
 // the Image element and a "ready" flag so callers can fall back to a
 // silhouette rectangle until the asset paints.

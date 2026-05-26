@@ -310,7 +310,7 @@ function AttractScreen({
           </div>
           <p className="mt-4 border-t border-white/10 pt-3 font-pixel text-xs uppercase tracking-widest text-white/55 lg:text-sm">
             <span className="text-gsGreen">{initialTotal.toLocaleString()}</span>{" "}
-            players today
+            players
           </p>
         </section>
 

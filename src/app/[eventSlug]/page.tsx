@@ -67,6 +67,43 @@ export default async function EventRegistrationPage({
     }
   }
 
+  // Two layouts share this page:
+  //  - First-time registration (form): big Flo + branding + form
+  //  - Play Again (returning booth player): compressed header so the
+  //    welcome / stats / Play Again / demo CTA / bullets fit above
+  //    the fold on a phone. The big branding isn't useful here —
+  //    the player just played and knows the game name.
+  if (showPlayAgain && player) {
+    return (
+      <main className="relative flex min-h-screen flex-col items-center px-4 pb-8 pt-6 md:px-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(133,196,65,0.08), transparent 70%)",
+          }}
+        />
+        <header className="flex w-full max-w-md items-center justify-between">
+          <GreenshadesLogo className="h-7 w-auto" />
+          <p className="font-serif text-[0.6rem] uppercase tracking-[0.25em] text-white/55">
+            {event.name}
+          </p>
+        </header>
+        <div className="mt-4 w-full max-w-md">
+          <PlayAgainCard
+            eventSlug={event.slug}
+            screenName={player.screen_name}
+            personalBest={personalBest}
+            personalRank={personalRank}
+            personalTotal={personalTotal}
+            initialDemoRequested={player.demo_requested ?? false}
+          />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-10 md:py-14">
       <div
@@ -95,23 +132,13 @@ export default async function EventRegistrationPage({
             height={388}
             unoptimized
             priority
-            className={`flo-bounce drop-shadow-[0_14px_28px_rgba(0,0,0,0.55)] ${
-              showPlayAgain ? "h-44 w-auto md:h-72" : ""
-            }`}
+            className="flo-bounce drop-shadow-[0_14px_28px_rgba(0,0,0,0.55)]"
             style={{ imageRendering: "pixelated" }}
           />
         </div>
 
-        <div
-          className={`flex w-full max-w-md flex-col ${
-            showPlayAgain ? "text-center" : "text-center md:text-left"
-          }`}
-        >
-          <div
-            className={`mb-6 flex flex-col ${
-              showPlayAgain ? "items-center" : "items-center md:items-start"
-            }`}
-          >
+        <div className="flex w-full max-w-md flex-col text-center md:text-left">
+          <div className="mb-6 flex flex-col items-center md:items-start">
             <GreenshadesLogo className="h-8 w-auto md:h-10" />
             <p className="mt-3 font-serif text-xs uppercase tracking-[0.25em] text-white/70 md:text-sm">
               {event.name}
@@ -121,26 +148,12 @@ export default async function EventRegistrationPage({
           <h1 className="whitespace-nowrap font-pixel text-2xl leading-none text-gsGreen sm:text-3xl md:text-4xl">
             PAYROLL RUNNER
           </h1>
-          <div
-            className={`mt-4 h-[3px] w-20 bg-gsGreen ${
-              showPlayAgain ? "mx-auto" : "mx-auto md:mx-0"
-            }`}
-          />
+          <div className="mx-auto mt-4 h-[3px] w-20 bg-gsGreen md:mx-0" />
           <p className="mb-6 mt-4 font-serif text-base text-white/85 md:text-lg">
             How long can you keep payroll running?
           </p>
 
-          {showPlayAgain && player ? (
-            <PlayAgainCard
-              eventSlug={event.slug}
-              screenName={player.screen_name}
-              personalBest={personalBest}
-              personalRank={personalRank}
-              personalTotal={personalTotal}
-            />
-          ) : (
-            <RegistrationForm eventSlug={event.slug} />
-          )}
+          <RegistrationForm eventSlug={event.slug} />
         </div>
       </section>
     </main>

@@ -193,12 +193,18 @@ function PlayersTable({ players }: { players: PlayerWithStats[] }) {
             <th className="px-3 py-2 text-right">Best</th>
             <th className="px-3 py-2 text-right">Games</th>
             <th className="px-3 py-2">HubSpot</th>
+            <th className="px-3 py-2">Demo</th>
             <th className="px-3 py-2">Joined</th>
           </tr>
         </thead>
         <tbody className="font-serif">
           {players.map((p) => (
-            <tr key={p.id} className="border-t border-white/5">
+            <tr
+              key={p.id}
+              className={`border-t border-white/5 ${
+                p.demo_requested ? "bg-gsGreen/5" : ""
+              }`}
+            >
               <td className="px-3 py-2">
                 {p.first_name} {p.last_name}
               </td>
@@ -216,6 +222,15 @@ function PlayersTable({ players }: { players: PlayerWithStats[] }) {
                   <span className="text-gsGreen">✓</span>
                 ) : (
                   <span className="text-yellow-400">pending</span>
+                )}
+              </td>
+              <td className="px-3 py-2">
+                {p.demo_requested ? (
+                  <span className="rounded bg-gsGreen/20 px-2 py-0.5 font-pixel text-[0.55rem] uppercase tracking-wider text-gsGreen">
+                    Demo
+                  </span>
+                ) : (
+                  <span className="text-white/30">—</span>
                 )}
               </td>
               <td className="px-3 py-2 text-xs text-white/50">

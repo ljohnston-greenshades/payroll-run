@@ -45,6 +45,7 @@ import {
   drawPixelText,
   drawRect,
   drawShieldLogoBadge,
+  getFloImage,
   getObstacleAsset,
 } from "./sprites";
 import type {
@@ -1070,23 +1071,30 @@ export class Game {
     ctx.fillRect(panelX + 6, panelY + 6, panelW - 12, 2);
     ctx.fillRect(panelX + 6, panelY + panelHeight - 8, panelW - 12, 2);
 
-    // Pixel-art Flo perched inside the left side of the dialog box.
-    // She animates the same as her in-game idle (leg shuffle + glint)
-    // so she feels alive, not posed. Her "feet" reference point is set
-    // well inside the panel chrome so the running animation never
-    // clips below the panel's bottom border.
-    const floBaseX = panelX + (isPortrait ? 10 : 28);
-    const floBaseY = panelY + panelHeight - (isPortrait ? 36 : 56);
-    drawFlamingo(
-      ctx,
-      floBaseX,
-      floBaseY,
-      false,
-      this.player.legFrame,
-      this.player.sunglassesGlint,
-      this.frame,
-      false,
-    );
+    // Polished Flo (the flo.png art) sits in the left side of the
+    // dialog box to introduce herself. We bottom-align her inside
+    // the panel chrome with a few pixels of padding. Falls back to
+    // the pixel-art flamingo if the PNG hasn't loaded yet.
+    const floImg = getFloImage();
+    const imgH = isPortrait ? 72 : 108;
+    const imgW = Math.round(imgH * (300 / 388));
+    const floX = panelX + (isPortrait ? 10 : 24);
+    const floY = panelY + panelHeight - imgH - (isPortrait ? 8 : 12);
+    if (floImg) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(floImg, floX, floY, imgW, imgH);
+    } else {
+      drawFlamingo(
+        ctx,
+        floX + imgW / 2,
+        floY + imgH,
+        false,
+        this.player.legFrame,
+        this.player.sunglassesGlint,
+        this.frame,
+        false,
+      );
+    }
 
     // Word-wrap using actual measured glyph widths so text never
     // spills out of the box. Press Start 2P width-per-char varies by
