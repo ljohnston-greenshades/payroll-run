@@ -286,6 +286,10 @@ function AttractScreen({
   initialEntries: LeaderboardEntry[];
   initialTotal: number;
 }) {
+  // Live player count, updated by LeaderboardTV on every poll so the
+  // footer keeps pace with new registrations instead of being frozen
+  // at the server-rendered snapshot.
+  const [liveTotal, setLiveTotal] = useState(initialTotal);
   const qrUrl = gameUrl
     ? `${gameUrl}/${encodeURIComponent(eventSlug)}?mode=booth`
     : "";
@@ -305,11 +309,12 @@ function AttractScreen({
               initialEntries={initialEntries}
               initialTotal={initialTotal}
               eventSlug={eventSlug}
-              maxVisible={12}
+              onTotalChange={setLiveTotal}
+              maxVisible={20}
             />
           </div>
           <p className="mt-4 border-t border-white/10 pt-3 font-pixel text-xs uppercase tracking-widest text-white/55 lg:text-sm">
-            <span className="text-gsGreen">{initialTotal.toLocaleString()}</span>{" "}
+            <span className="text-gsGreen">{liveTotal.toLocaleString()}</span>{" "}
             players
           </p>
         </section>
