@@ -434,7 +434,13 @@ export class Game {
         // smash doesn't queue an unintended restart.
         this.input.consumeJump();
       } else if (this.input.consumeJump()) {
-        this.beginPlaythrough();
+        // In booth mode the BoothShell drives the transition back
+        // to attract on its own timer — a button mash here would
+        // start a phantom run that gets cut off seconds later when
+        // the shell unmounts the canvas. Swallow the input instead.
+        if (!this.options.hideSessionBest) {
+          this.beginPlaythrough();
+        }
       }
       this.particles = updateParticles(this.particles);
       this.floatingTexts = updateFloatingTexts(this.floatingTexts);
