@@ -290,7 +290,7 @@ export function PlayAgainCard({
             </span>
             <span className="flex-1">
               <span className="flex items-center justify-between font-pixel text-base text-gsNavy">
-                <span>SCHEDULE WITH {routedRep.firstName.toUpperCase()}</span>
+                <span>GET A DEMO</span>
                 <span aria-hidden>→</span>
               </span>
               <span className="mt-1 block font-serif text-xs text-gsNavy/75">
@@ -325,7 +325,7 @@ export function PlayAgainCard({
             </span>
             <span className="flex-1">
               <span className="flex items-center justify-between font-pixel text-base text-gsNavy">
-                <span>{demoBusy ? "SENDING…" : "SCHEDULE A DEMO"}</span>
+                <span>{demoBusy ? "SENDING…" : "GET A DEMO"}</span>
                 <span aria-hidden>→</span>
               </span>
               <span className="mt-1 block font-serif text-xs text-gsNavy/75">
