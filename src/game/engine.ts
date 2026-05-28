@@ -109,7 +109,7 @@ const INTRO_PANELS: string[] = [
 // typing completes — typing time already scales with text length on
 // its own.
 function holdFramesForPanel(text: string): number {
-  return Math.max(60, Math.min(190, 50 + Math.round(text.length * 1.3)));
+  return Math.max(57, Math.min(180, 47 + Math.round(text.length * 1.235)));
 }
 // Highlight ring advances to the next icon every this many frames.
 // Slow enough that eyes track each icon comfortably before the ring
@@ -410,7 +410,9 @@ export class Game {
         }
       } else {
         if (this.introCharCount < fullLen) {
-          if (this.frame % 2 === 0) {
+          // Reveal one char every 2 frames, plus an extra char every
+          // 40 frames — a clean 5% speed bump over the base rate.
+          if (this.frame % 2 === 0 || this.frame % 40 === 1) {
             this.introCharCount++;
             if (this.introCharCount >= fullLen) {
               // Typing just completed — start the hold timer so the
