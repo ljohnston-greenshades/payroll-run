@@ -25,6 +25,9 @@ export function CreateEventForm({ adminKey }: Props) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
+  const [location, setLocation] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -48,6 +51,9 @@ export function CreateEventForm({ adminKey }: Props) {
     form.set("key", adminKey);
     form.set("name", name);
     form.set("slug", slug);
+    form.set("starts_at", startsAt);
+    form.set("ends_at", endsAt);
+    form.set("location", location);
     startTransition(async () => {
       const result = await createEventAction(form);
       if (!result.ok) {
@@ -58,6 +64,9 @@ export function CreateEventForm({ adminKey }: Props) {
       setName("");
       setSlug("");
       setSlugTouched(false);
+      setStartsAt("");
+      setEndsAt("");
+      setLocation("");
       router.refresh();
     });
   };
@@ -103,6 +112,58 @@ export function CreateEventForm({ adminKey }: Props) {
           />
           <p className="mt-1 text-xs text-white/45">
             Becomes /booth/{slug || "<slug>"}
+          </p>
+        </div>
+        <div>
+          <label
+            htmlFor="event-starts-at"
+            className="block text-xs font-semibold uppercase tracking-wider text-white/70"
+          >
+            Start date
+          </label>
+          <input
+            id="event-starts-at"
+            name="starts_at"
+            type="date"
+            value={startsAt}
+            onChange={(e) => setStartsAt(e.target.value)}
+            className="mt-1.5 w-full rounded-md border border-white/15 bg-white/[0.04] px-3 py-2 text-white outline-none focus:border-gsGreen focus:ring-2 focus:ring-gsGreen/25"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="event-ends-at"
+            className="block text-xs font-semibold uppercase tracking-wider text-white/70"
+          >
+            End date
+          </label>
+          <input
+            id="event-ends-at"
+            name="ends_at"
+            type="date"
+            value={endsAt}
+            onChange={(e) => setEndsAt(e.target.value)}
+            className="mt-1.5 w-full rounded-md border border-white/15 bg-white/[0.04] px-3 py-2 text-white outline-none focus:border-gsGreen focus:ring-2 focus:ring-gsGreen/25"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label
+            htmlFor="event-location"
+            className="block text-xs font-semibold uppercase tracking-wider text-white/70"
+          >
+            Location
+          </label>
+          <input
+            id="event-location"
+            name="location"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Las Vegas, NV"
+            className="mt-1.5 w-full rounded-md border border-white/15 bg-white/[0.04] px-3 py-2 text-white placeholder-white/40 outline-none focus:border-gsGreen focus:ring-2 focus:ring-gsGreen/25"
+          />
+          <p className="mt-1 text-xs text-white/45">
+            Shown on payrollrunner.com next to upcoming events. Leave dates
+            blank to keep the slug live but hidden from the public list.
           </p>
         </div>
       </div>

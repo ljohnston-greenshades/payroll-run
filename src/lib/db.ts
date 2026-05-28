@@ -8,6 +8,13 @@ export interface Event {
   name: string;
   created_at: Date;
   archived_at: Date | null;
+  // Schedule + location are nullable so admins can spin up a slug
+  // (and start testing the booth URL) before they've nailed down the
+  // exact dates. Events with null starts_at don't appear on the
+  // public homepage — that's how we "stage" pre-announce slugs.
+  starts_at: Date | null;
+  ends_at: Date | null;
+  location: string | null;
 }
 
 export async function getEvent(slug: string): Promise<Event | null> {
@@ -34,13 +41,65 @@ export async function listAllEvents(): Promise<Event[]> {
   return rows;
 }
 
-export async function createEvent(slug: string, name: string): Promise<Event> {
+// Homepage list: current + upcoming events only, with "test" slugs
+// and names filtered out so a staging event we forgot to archive
+// doesn't end up on payrollrunner.com.
+//
+// Sort: live events first (so visitors landing during a conference
+// see the LIVE badge immediately), then upcoming events soonest
+// first. Past events (ends_at < today) and dateless events are
+// excluded entirely.
+export async function listPublicEvents(): Promise<Event[]> {
   const { rows } = await sql<Event>`
-    INSERT INTO events (slug, name)
-    VALUES (${slug}, ${name})
+    SELECT * FROM events
+    WHERE archived_at IS NULL
+      AND starts_at IS NOT NULL
+      AND (ends_at IS NULL OR ends_at >= CURRENT_DATE)
+      AND LOWER(slug) NOT LIKE '%test%'
+      AND LOWER(name) NOT LIKE '%test%'
+    ORDER BY
+      CASE
+        WHEN starts_at <= CURRENT_DATE
+         AND (ends_at IS NULL OR ends_at >= CURRENT_DATE) THEN 0
+        ELSE 1
+      END,
+      starts_at ASC
+  `;
+  return rows;
+}
+
+export async function createEvent(
+  slug: string,
+  name: string,
+  startsAt: string | null,
+  endsAt: string | null,
+  location: string | null,
+): Promise<Event> {
+  const { rows } = await sql<Event>`
+    INSERT INTO events (slug, name, starts_at, ends_at, location)
+    VALUES (${slug}, ${name}, ${startsAt}, ${endsAt}, ${location})
     RETURNING *
   `;
   return rows[0];
+}
+
+// Edits the schedule fields on an existing event row in one shot.
+// Pass null to clear any of the three values (e.g. "we don't know
+// the end date yet"). The slug + name aren't touched here — those
+// stay immutable so URLs and HubSpot UTM history remain stable.
+export async function updateEventSchedule(
+  slug: string,
+  startsAt: string | null,
+  endsAt: string | null,
+  location: string | null,
+): Promise<void> {
+  await sql`
+    UPDATE events
+    SET starts_at = ${startsAt},
+        ends_at = ${endsAt},
+        location = ${location}
+    WHERE slug = ${slug}
+  `;
 }
 
 export async function archiveEvent(slug: string): Promise<void> {
