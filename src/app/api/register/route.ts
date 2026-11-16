@@ -9,6 +9,7 @@ import {
 } from "@/lib/db";
 import { setSessionCookie } from "@/lib/session";
 import { submitToHubSpot } from "@/lib/hubspot";
+import { sendToClay } from "@/lib/clay";
 
 export const dynamic = "force-dynamic";
 
@@ -108,21 +109,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // slow. Errors are swallowed; downstream "Schedule with X"
   // flow tolerates an unrouted lead by falling back to the generic
   // demo CTA + Slack QB.
-  const clayUrl = process.env.CLAY_WEBHOOK_URL;
-  if (clayUrl) {
-    fetch(clayUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        firstName,
-        lastName,
-        email,
-        company,
-        eventSlug: event.slug,
-        eventName: event.name,
-      }),
-    }).catch((err) => console.warn("Clay webhook failed:", err));
-  }
+  // A brand-new player can't have asked for a demo yet, so this is
+  // always false here; /api/demo-request sends a follow-up row with
+  // demoRequested: true when they tap the CTA.
+  void sendToClay({
+    trigger: "registration",
+    firstName,
+    lastName,
+    email,
+    company,
+    eventSlug: event.slug,
+    eventName: event.name,
+    demoRequested: false,
+  });
 
   if (queueing) {
     const entry = await enqueueForBooth(
