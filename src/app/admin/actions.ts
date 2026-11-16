@@ -61,8 +61,8 @@ export async function retryHubspotAction(formData: FormData): Promise<void> {
       lastName: p.last_name,
       email: p.email,
       company: p.company ?? "",
-      eventSlug,
       eventName,
+      utmCampaign: eventSlug,
     });
     if (ok) {
       await markHubspotSubmitted(p.id);

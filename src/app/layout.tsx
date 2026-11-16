@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: "Payroll Runner",
   description: "How long can you keep payroll running?",
   robots: { index: false, follow: false },
+  icons: {
+    icon: "/payroll-runner-favicon.png",
+    shortcut: "/payroll-runner-favicon.png",
+    apple: "/payroll-runner-favicon.png",
+  },
 };
 
 export default function RootLayout({

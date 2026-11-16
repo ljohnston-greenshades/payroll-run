@@ -10,6 +10,7 @@ import { ParallaxSkyline } from "./ParallaxSkyline";
 import { QRCode } from "./QRCode";
 import { useGamepadButtons } from "@/hooks/useGamepadButtons";
 import type { LeaderboardEntry } from "@/lib/db";
+import { buildBoothQueueUrl } from "@/lib/utm";
 
 interface Props {
   eventName: string;
@@ -191,9 +192,7 @@ export function BoothShell({
     }, 8_000);
   }, []);
 
-  const qrUrl = gameUrl
-    ? `${gameUrl}/${encodeURIComponent(eventSlug)}?mode=booth`
-    : "";
+  const qrUrl = buildBoothQueueUrl(gameUrl, eventSlug);
 
   return (
     <div className="relative z-10 flex h-full flex-col">
@@ -290,9 +289,7 @@ function AttractScreen({
   // footer keeps pace with new registrations instead of being frozen
   // at the server-rendered snapshot.
   const [liveTotal, setLiveTotal] = useState(initialTotal);
-  const qrUrl = gameUrl
-    ? `${gameUrl}/${encodeURIComponent(eventSlug)}?mode=booth`
-    : "";
+  const qrUrl = buildBoothQueueUrl(gameUrl, eventSlug);
   return (
     <div className="relative flex flex-1 flex-col items-stretch gap-6 px-8 pb-6 pt-6 lg:px-12 lg:pb-8 lg:pt-8 xl:px-16">
       <ParallaxSkyline />

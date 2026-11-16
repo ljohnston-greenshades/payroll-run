@@ -9,6 +9,8 @@ import {
 } from "@/lib/db";
 import { setSessionCookie } from "@/lib/session";
 import { submitToHubSpot } from "@/lib/hubspot";
+import { sendToClay } from "@/lib/clay";
+import { sanitizeUtm } from "@/lib/utm";
 
 export const dynamic = "force-dynamic";
 
@@ -94,35 +96,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     lastName,
     email,
     company,
-    eventSlug: event.slug,
     eventName: event.name,
+    // From the link they scanned (booth QR = the event slug); falls
+    // back to the slug if the link had no utm_campaign.
+    utmCampaign:
+      sanitizeUtm((body as Record<string, unknown>).utmCampaign) ??
+      event.slug,
   });
   if (submitted) {
     await markHubspotSubmitted(player.id);
   }
 
-  // Fire off the registration to Clay's webhook so it can enrich
-  // industry + employee count and assign the contact owner in
-  // HubSpot before the player finishes their game. Non-blocking
-  // (no await) — registration must complete fast even if Clay is
-  // slow. Errors are swallowed; downstream "Schedule with X"
-  // flow tolerates an unrouted lead by falling back to the generic
-  // demo CTA + Slack QB.
-  const clayUrl = process.env.CLAY_WEBHOOK_URL;
-  if (clayUrl) {
-    fetch(clayUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        firstName,
-        lastName,
-        email,
-        company,
-        eventSlug: event.slug,
-        eventName: event.name,
-      }),
-    }).catch((err) => console.warn("Clay webhook failed:", err));
-  }
+  // Send the registration to Clay's webhook so it can enrich
+  // industry + employee count and assign the contact owner in HubSpot
+  // before the player finishes their game. Not awaited, so
+  // registration stays fast; errors are swallowed. If the lead isn't
+  // routed yet, the Play Again demo CTA falls back to the generic
+  // flow + Slack alert. Demo hand-raises don't go to Clay;
+  // /api/demo-request records them on the HubSpot contact instead.
+  void sendToClay({
+    firstName,
+    lastName,
+    email,
+    company,
+    eventSlug: event.slug,
+    eventName: event.name,
+  });
 
   if (queueing) {
     const entry = await enqueueForBooth(

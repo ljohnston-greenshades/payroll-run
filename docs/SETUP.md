@@ -39,9 +39,10 @@ HUBSPOT_PORTAL_ID=24081706
 HUBSPOT_GAME_FORM_ID=...
 ADMIN_SECRET=…
 POSTGRES_URL=…
-UTM_MEDIUM=event
-UTM_CAMPAIGN=payroll-run-game
 ```
+
+UTMs need no env vars: medium (`event`) and source (`trade show`) are fixed
+in `src/lib/utm.ts`, and campaign is the event slug.
 
 Run `sql/005-events.sql` in Neon (the migration also seeds the existing
 test event row so nothing breaks during the migration).

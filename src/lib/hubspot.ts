@@ -1,16 +1,17 @@
+import { UTM_MEDIUM, UTM_SOURCE } from "@/lib/utm";
+
 export interface HubSpotRegistration {
   firstName: string;
   lastName: string;
   email: string;
   company: string;
-  eventSlug: string;
   eventName: string;
+  // From the registration link's utm_campaign; defaults to the event slug.
+  utmCampaign: string;
 }
 
 const PORTAL_ID = process.env.HUBSPOT_PORTAL_ID;
 const FORM_ID = process.env.HUBSPOT_GAME_FORM_ID;
-const UTM_MEDIUM = process.env.UTM_MEDIUM || "event";
-const UTM_CAMPAIGN = process.env.UTM_CAMPAIGN || "payroll-runner-game";
 const GAME_URL =
   process.env.NEXT_PUBLIC_GAME_URL || "https://payrollrun.greenshades.com";
 
@@ -37,8 +38,8 @@ export async function submitToHubSpot(input: HubSpotRegistration): Promise<boole
       { name: "company", value: input.company },
       { name: "lead_acquisition_channel", value: "Event" },
       { name: "utm_medium", value: UTM_MEDIUM },
-      { name: "utm_source", value: input.eventSlug },
-      { name: "utm_campaign", value: UTM_CAMPAIGN },
+      { name: "utm_source", value: UTM_SOURCE },
+      { name: "utm_campaign", value: input.utmCampaign },
     ],
     context: {
       pageUri: GAME_URL,
