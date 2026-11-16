@@ -120,7 +120,7 @@ export async function getOwnerProfile(
 //   event_demo_interest       = true ("Yes")
 //   event_demo_handraise_date = when they tapped
 //   event_demo_source         = the event slug (matches the game URL
-//                               and the default utm_source)
+//                               and the utm_campaign at registration)
 // A HubSpot workflow keys off these to set lifecycle stage = MQL and
 // notify #inbound-leads. The contact is looked up by email
 // (idProperty=email). Returns false on any failure (missing token or

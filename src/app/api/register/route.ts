@@ -107,15 +107,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await markHubspotSubmitted(player.id);
   }
 
-  // Fire off the registration to Clay's webhook so it can enrich
-  // industry + employee count and assign the contact owner in
-  // HubSpot before the player finishes their game. Non-blocking
-  // (no await) — registration must complete fast even if Clay is
-  // slow. Errors are swallowed; downstream "Schedule with X"
-  // flow tolerates an unrouted lead by falling back to the generic
-  // demo CTA + Slack QB.
-  // Demo hand-raises don't go to Clay; /api/demo-request stamps them
-  // on the HubSpot contact instead.
+  // Send the registration to Clay's webhook so it can enrich
+  // industry + employee count and assign the contact owner in HubSpot
+  // before the player finishes their game. Not awaited, so
+  // registration stays fast; errors are swallowed. If the lead isn't
+  // routed yet, the Play Again demo CTA falls back to the generic
+  // flow + Slack alert. Demo hand-raises don't go to Clay;
+  // /api/demo-request records them on the HubSpot contact instead.
   void sendToClay({
     firstName,
     lastName,
