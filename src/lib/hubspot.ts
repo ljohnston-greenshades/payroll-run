@@ -1,13 +1,12 @@
+import { UTM_MEDIUM, UTM_SOURCE } from "@/lib/utm";
+
 export interface HubSpotRegistration {
   firstName: string;
   lastName: string;
   email: string;
   company: string;
   eventName: string;
-  // Resolved by the caller: URL params first, then the event's
-  // configured UTMs, then defaults (see src/lib/utm.ts).
-  utmMedium: string;
-  utmSource: string;
+  // From the registration link's utm_campaign; defaults to the event slug.
   utmCampaign: string;
 }
 
@@ -38,8 +37,8 @@ export async function submitToHubSpot(input: HubSpotRegistration): Promise<boole
       { name: "email", value: input.email },
       { name: "company", value: input.company },
       { name: "lead_acquisition_channel", value: "Event" },
-      { name: "utm_medium", value: input.utmMedium },
-      { name: "utm_source", value: input.utmSource },
+      { name: "utm_medium", value: UTM_MEDIUM },
+      { name: "utm_source", value: UTM_SOURCE },
       { name: "utm_campaign", value: input.utmCampaign },
     ],
     context: {

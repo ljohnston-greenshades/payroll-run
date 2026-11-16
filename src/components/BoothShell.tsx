@@ -10,13 +10,12 @@ import { ParallaxSkyline } from "./ParallaxSkyline";
 import { QRCode } from "./QRCode";
 import { useGamepadButtons } from "@/hooks/useGamepadButtons";
 import type { LeaderboardEntry } from "@/lib/db";
+import { buildBoothQueueUrl } from "@/lib/utm";
 
 interface Props {
   eventName: string;
   eventSlug: string;
-  // Booth QR code link (event page in queue mode + the event's UTMs),
-  // built server-side by buildBoothQueueUrl.
-  qrUrl: string;
+  gameUrl: string;
   initialEntries: LeaderboardEntry[];
   initialTotal: number;
 }
@@ -34,7 +33,7 @@ const READY_TTL_SECONDS = 30;
 export function BoothShell({
   eventName,
   eventSlug,
-  qrUrl,
+  gameUrl,
   initialEntries,
   initialTotal,
 }: Props) {
@@ -193,6 +192,7 @@ export function BoothShell({
     }, 8_000);
   }, []);
 
+  const qrUrl = buildBoothQueueUrl(gameUrl, eventSlug);
 
   return (
     <div className="relative z-10 flex h-full flex-col">
@@ -200,7 +200,7 @@ export function BoothShell({
       {phase === "attract" ? (
         <AttractScreen
           eventSlug={eventSlug}
-          qrUrl={qrUrl}
+          gameUrl={gameUrl}
           depth={queueDepth}
           initialEntries={initialEntries}
           initialTotal={initialTotal}
@@ -274,13 +274,13 @@ function BoothHeader({ eventName }: { eventName: string }) {
 
 function AttractScreen({
   eventSlug,
-  qrUrl,
+  gameUrl,
   depth,
   initialEntries,
   initialTotal,
 }: {
   eventSlug: string;
-  qrUrl: string;
+  gameUrl: string;
   depth: number;
   initialEntries: LeaderboardEntry[];
   initialTotal: number;
@@ -289,6 +289,7 @@ function AttractScreen({
   // footer keeps pace with new registrations instead of being frozen
   // at the server-rendered snapshot.
   const [liveTotal, setLiveTotal] = useState(initialTotal);
+  const qrUrl = buildBoothQueueUrl(gameUrl, eventSlug);
   return (
     <div className="relative flex flex-1 flex-col items-stretch gap-6 px-8 pb-6 pt-6 lg:px-12 lg:pb-8 lg:pt-8 xl:px-16">
       <ParallaxSkyline />

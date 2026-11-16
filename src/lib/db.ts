@@ -15,11 +15,6 @@ export interface Event {
   starts_at: Date | null;
   ends_at: Date | null;
   location: string | null;
-  // Per-event UTM overrides for the booth QR link + HubSpot form.
-  // NULL = use the default (see resolveEventUtms in src/lib/utm.ts).
-  utm_medium: string | null;
-  utm_source: string | null;
-  utm_campaign: string | null;
 }
 
 export async function getEvent(slug: string): Promise<Event | null> {
@@ -73,52 +68,36 @@ export async function listPublicEvents(): Promise<Event[]> {
   return rows;
 }
 
-// Editable per-event settings. Every field is nullable; null clears
-// it (dates/location) or falls back to the default (UTMs — see
-// src/lib/utm.ts).
-export interface EventSettings {
-  startsAt: string | null;
-  endsAt: string | null;
-  location: string | null;
-  utmMedium: string | null;
-  utmSource: string | null;
-  utmCampaign: string | null;
-}
-
 export async function createEvent(
   slug: string,
   name: string,
-  s: EventSettings,
+  startsAt: string | null,
+  endsAt: string | null,
+  location: string | null,
 ): Promise<Event> {
   const { rows } = await sql<Event>`
-    INSERT INTO events (
-      slug, name, starts_at, ends_at, location,
-      utm_medium, utm_source, utm_campaign
-    )
-    VALUES (
-      ${slug}, ${name}, ${s.startsAt}, ${s.endsAt}, ${s.location},
-      ${s.utmMedium}, ${s.utmSource}, ${s.utmCampaign}
-    )
+    INSERT INTO events (slug, name, starts_at, ends_at, location)
+    VALUES (${slug}, ${name}, ${startsAt}, ${endsAt}, ${location})
     RETURNING *
   `;
   return rows[0];
 }
 
-// Updates schedule, location, and UTMs on an existing event in one
-// shot. The slug + name aren't touched here — those stay immutable so
-// URLs and HubSpot history remain stable.
-export async function updateEventSettings(
+// Edits the schedule fields on an existing event row in one shot.
+// Pass null to clear any of the three values (e.g. "we don't know
+// the end date yet"). The slug + name aren't touched here — those
+// stay immutable so URLs and HubSpot UTM history remain stable.
+export async function updateEventSchedule(
   slug: string,
-  s: EventSettings,
+  startsAt: string | null,
+  endsAt: string | null,
+  location: string | null,
 ): Promise<void> {
   await sql`
     UPDATE events
-    SET starts_at = ${s.startsAt},
-        ends_at = ${s.endsAt},
-        location = ${s.location},
-        utm_medium = ${s.utmMedium},
-        utm_source = ${s.utmSource},
-        utm_campaign = ${s.utmCampaign}
+    SET starts_at = ${startsAt},
+        ends_at = ${endsAt},
+        location = ${location}
     WHERE slug = ${slug}
   `;
 }

@@ -3,7 +3,6 @@ import { BoothBackdrop } from "@/components/BoothBackdrop";
 import { BoothShell } from "@/components/BoothShell";
 import { getEvent, getLeaderboard, getPlayerCount } from "@/lib/db";
 import { isValidEventSlug } from "@/lib/validation";
-import { buildBoothQueueUrl, resolveEventUtms } from "@/lib/utm";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +20,7 @@ export default async function BoothEventPage({
   const event = await getEvent(slug);
   if (!event) notFound();
 
-  // Link encoded in the booth QR codes: registration page in queue
-  // mode, tagged with this event's UTMs (set in /admin/events).
-  const qrUrl = buildBoothQueueUrl(
-    process.env.NEXT_PUBLIC_GAME_URL ?? "",
-    event.slug,
-    resolveEventUtms(event),
-  );
+  const gameUrl = process.env.NEXT_PUBLIC_GAME_URL ?? "";
   const [entries, total] = await Promise.all([
     getLeaderboard(event.slug, 10),
     getPlayerCount(event.slug),
@@ -39,7 +32,7 @@ export default async function BoothEventPage({
       <BoothShell
         eventName={event.name}
         eventSlug={event.slug}
-        qrUrl={qrUrl}
+        gameUrl={gameUrl}
         initialEntries={entries}
         initialTotal={total}
       />

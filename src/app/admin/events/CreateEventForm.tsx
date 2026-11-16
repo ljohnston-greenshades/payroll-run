@@ -6,8 +6,6 @@ import { createEventAction } from "./actions";
 
 interface Props {
   adminKey: string;
-  defaultUtmMedium: string;
-  defaultUtmCampaign: string;
 }
 
 // Title-Case → kebab-case slug suggestion so the user doesn't have to
@@ -22,11 +20,7 @@ function suggestSlug(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
-export function CreateEventForm({
-  adminKey,
-  defaultUtmMedium,
-  defaultUtmCampaign,
-}: Props) {
+export function CreateEventForm({ adminKey }: Props) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -34,9 +28,6 @@ export function CreateEventForm({
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [location, setLocation] = useState("");
-  const [utmMedium, setUtmMedium] = useState("");
-  const [utmSource, setUtmSource] = useState("");
-  const [utmCampaign, setUtmCampaign] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -63,9 +54,6 @@ export function CreateEventForm({
     form.set("starts_at", startsAt);
     form.set("ends_at", endsAt);
     form.set("location", location);
-    form.set("utm_medium", utmMedium);
-    form.set("utm_source", utmSource);
-    form.set("utm_campaign", utmCampaign);
     startTransition(async () => {
       const result = await createEventAction(form);
       if (!result.ok) {
@@ -79,9 +67,6 @@ export function CreateEventForm({
       setStartsAt("");
       setEndsAt("");
       setLocation("");
-      setUtmMedium("");
-      setUtmSource("");
-      setUtmCampaign("");
       router.refresh();
     });
   };
@@ -181,36 +166,6 @@ export function CreateEventForm({
             blank to keep the slug live but hidden from the public list.
           </p>
         </div>
-        <div className="md:col-span-2">
-          <p className="block text-xs font-semibold uppercase tracking-wider text-white/70">
-            Booth QR code UTMs
-          </p>
-          <div className="mt-1.5 grid gap-3 md:grid-cols-3">
-            <UtmInput
-              label="Medium"
-              value={utmMedium}
-              onChange={setUtmMedium}
-              placeholder={defaultUtmMedium}
-            />
-            <UtmInput
-              label="Source"
-              value={utmSource}
-              onChange={setUtmSource}
-              placeholder={slug || "<slug>"}
-            />
-            <UtmInput
-              label="Campaign"
-              value={utmCampaign}
-              onChange={setUtmCampaign}
-              placeholder={defaultUtmCampaign}
-            />
-          </div>
-          <p className="mt-1 text-xs text-white/45">
-            Added to the link in the booth TV&apos;s QR code and sent to
-            HubSpot when someone registers. Leave blank to use the defaults
-            shown.
-          </p>
-        </div>
       </div>
       {error ? (
         <p className="mt-3 text-sm text-red-300" role="alert">
@@ -230,29 +185,5 @@ export function CreateEventForm({
         {isPending ? "Creating…" : "Create Event"}
       </button>
     </form>
-  );
-}
-
-function UtmInput({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-}) {
-  return (
-    <label className="block text-[0.65rem] uppercase tracking-wider text-white/55">
-      {label}
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="mt-1 w-full rounded-md border border-white/15 bg-white/[0.04] px-3 py-2 text-sm normal-case tracking-normal text-white placeholder-white/35 outline-none focus:border-gsGreen focus:ring-2 focus:ring-gsGreen/25"
-      />
-    </label>
   );
 }

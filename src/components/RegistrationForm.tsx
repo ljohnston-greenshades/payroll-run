@@ -75,10 +75,8 @@ export function RegistrationForm({ eventSlug }: Props) {
           ...form,
           mode,
           eventSlug,
-          // UTMs from the link they arrived on (e.g. the booth QR
-          // code). The server falls back to the event's defaults.
-          utmMedium: searchParams.get("utm_medium"),
-          utmSource: searchParams.get("utm_source"),
+          // From the link they arrived on (the booth QR sets it to the
+          // event slug). Medium and source are fixed server-side.
           utmCampaign: searchParams.get("utm_campaign"),
         }),
       });
