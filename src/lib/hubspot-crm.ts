@@ -6,7 +6,7 @@
 // Uses a Private App access token (`HUBSPOT_ACCESS_TOKEN`) with these
 // scopes:
 //   - crm.objects.contacts.read
-//   - crm.objects.contacts.write   (for setEventDemoHandraiseDate)
+//   - crm.objects.contacts.write   (for recordEventDemoHandraise)
 //   - crm.objects.owners.read
 
 const HS_API = "https://api.hubapi.com";
@@ -115,16 +115,20 @@ export async function getOwnerProfile(
   }
 }
 
-// Sets the contact's `event_demo_handraise_date` property when a
-// player asks for a demo. A HubSpot workflow keys off this property
-// to set lifecycle stage = MQL and notify #inbound-leads.
-// Looks the contact up by email (idProperty=email). Returns false on
-// any failure (missing token or write scope, contact not created yet,
-// network error); the hand-raise is still saved in Postgres and shown
-// in the admin panel.
-export async function setEventDemoHandraiseDate(
+// Records a demo hand-raise on the HubSpot contact by setting three
+// properties together:
+//   event_demo_interest       = true ("Yes")
+//   event_demo_handraise_date = when they tapped
+//   event_demo_source         = the event slug (matches the game URL
+//                               and the default utm_source)
+// A HubSpot workflow keys off these to set lifecycle stage = MQL and
+// notify #inbound-leads. The contact is looked up by email
+// (idProperty=email). Returns false on any failure (missing token or
+// write scope, contact not created yet, network error); the
+// hand-raise is still saved in Postgres and shown in the admin panel.
+export async function recordEventDemoHandraise(
   email: string,
-  when: Date,
+  details: { when: Date; eventSlug: string },
 ): Promise<boolean> {
   const headers = authHeaders();
   if (!headers) return false;
@@ -136,7 +140,11 @@ export async function setEventDemoHandraiseDate(
         headers,
         cache: "no-store",
         body: JSON.stringify({
-          properties: { event_demo_handraise_date: when.toISOString() },
+          properties: {
+            event_demo_interest: "true",
+            event_demo_handraise_date: details.when.toISOString(),
+            event_demo_source: details.eventSlug,
+          },
         }),
         signal: AbortSignal.timeout(5000),
       },

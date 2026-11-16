@@ -10,6 +10,7 @@ import {
 import { setSessionCookie } from "@/lib/session";
 import { submitToHubSpot } from "@/lib/hubspot";
 import { sendToClay } from "@/lib/clay";
+import { resolveEventUtms, sanitizeUtm } from "@/lib/utm";
 
 export const dynamic = "force-dynamic";
 
@@ -90,13 +91,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Fire-and-forget in spirit: we await the HubSpot call so we can record
   // the outcome in the players table, but errors never bubble up to the
   // user. The booth flow must keep working if HubSpot is down.
+  // UTMs from the URL the player arrived on win; anything missing
+  // falls back to the event's configured (or default) values.
+  const eventUtms = resolveEventUtms(event);
+  const raw = body as Record<string, unknown>;
   const submitted = await submitToHubSpot({
     firstName,
     lastName,
     email,
     company,
-    eventSlug: event.slug,
     eventName: event.name,
+    utmMedium: sanitizeUtm(raw.utmMedium) ?? eventUtms.medium,
+    utmSource: sanitizeUtm(raw.utmSource) ?? eventUtms.source,
+    utmCampaign: sanitizeUtm(raw.utmCampaign) ?? eventUtms.campaign,
   });
   if (submitted) {
     await markHubspotSubmitted(player.id);

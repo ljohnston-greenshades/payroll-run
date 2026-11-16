@@ -10,6 +10,7 @@ import {
   markHubspotSubmitted,
 } from "@/lib/db";
 import { submitToHubSpot } from "@/lib/hubspot";
+import { resolveEventUtms } from "@/lib/utm";
 
 function assertAdmin(formData: FormData): void {
   const key = formData.get("key");
@@ -52,6 +53,17 @@ export async function retryHubspotAction(formData: FormData): Promise<void> {
   const eventName =
     event?.name ?? process.env.NEXT_PUBLIC_EVENT_NAME ?? eventSlug;
 
+  // Retries don't know which link the player originally came from,
+  // so they use the event's configured UTMs.
+  const utms = resolveEventUtms(
+    event ?? {
+      slug: eventSlug,
+      utm_medium: null,
+      utm_source: null,
+      utm_campaign: null,
+    },
+  );
+
   const players = await getFailedHubspotPlayers(eventSlug);
   // Sequential to keep rate friendly; HubSpot Forms API has no published
   // limit but bursting hundreds of submissions in parallel is impolite.
@@ -61,8 +73,10 @@ export async function retryHubspotAction(formData: FormData): Promise<void> {
       lastName: p.last_name,
       email: p.email,
       company: p.company ?? "",
-      eventSlug,
       eventName,
+      utmMedium: utms.medium,
+      utmSource: utms.source,
+      utmCampaign: utms.campaign,
     });
     if (ok) {
       await markHubspotSubmitted(p.id);

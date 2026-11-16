@@ -5,7 +5,7 @@ import {
 } from "@/lib/db";
 import {
   findContactOwnerByEmail,
-  setEventDemoHandraiseDate,
+  recordEventDemoHandraise,
 } from "@/lib/hubspot-crm";
 import { getCurrentPlayer } from "@/lib/session";
 import { notifyEventsTeam } from "@/lib/slack-notify";
@@ -25,12 +25,16 @@ export async function POST(): Promise<NextResponse> {
   }
   await markDemoRequested(player.id);
 
-  // Stamp the hand-raise on the HubSpot contact so a HubSpot workflow
-  // can promote it to MQL and alert sales. Only the first tap writes,
-  // so the date reflects when they first asked. Awaited so the write
-  // isn't cut off when the serverless function returns.
+  // Record the hand-raise on the HubSpot contact (interest = Yes,
+  // date, source) so a HubSpot workflow can promote it to MQL and
+  // alert sales. Only the first tap writes, so the date reflects when
+  // they first asked. Awaited so the write isn't cut off when the
+  // serverless function returns.
   if (!player.demo_requested) {
-    await setEventDemoHandraiseDate(player.email, new Date());
+    await recordEventDemoHandraise(player.email, {
+      when: new Date(),
+      eventSlug: player.event_slug,
+    });
   }
 
   // Check current routing status. If routed already, the client

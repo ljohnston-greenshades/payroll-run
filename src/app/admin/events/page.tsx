@@ -8,7 +8,13 @@ import {
   unarchiveEventAction,
 } from "./actions";
 import { CreateEventForm } from "./CreateEventForm";
-import { EventScheduleForm } from "./EventScheduleForm";
+import { EventSettingsForm } from "./EventSettingsForm";
+import {
+  DEFAULT_UTM_CAMPAIGN,
+  DEFAULT_UTM_MEDIUM,
+  buildBoothQueueUrl,
+  resolveEventUtms,
+} from "@/lib/utm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -53,7 +59,11 @@ export default async function AdminEventsPage({
         <h2 className="mb-3 font-pixel text-xs uppercase tracking-wider text-gsGreen">
           New event
         </h2>
-        <CreateEventForm adminKey={adminKey} />
+        <CreateEventForm
+          adminKey={adminKey}
+          defaultUtmMedium={DEFAULT_UTM_MEDIUM}
+          defaultUtmCampaign={DEFAULT_UTM_CAMPAIGN}
+        />
       </section>
 
       <section>
@@ -148,12 +158,22 @@ export default async function AdminEventsPage({
                       </tr>
                       <tr className="bg-white/[0.02]">
                         <td colSpan={6} className="px-3 py-2">
-                          <EventScheduleForm
+                          <EventSettingsForm
                             adminKey={adminKey}
                             slug={e.slug}
                             initialStartsAt={toIsoDate(e.starts_at)}
                             initialEndsAt={toIsoDate(e.ends_at)}
                             initialLocation={e.location}
+                            initialUtmMedium={e.utm_medium}
+                            initialUtmSource={e.utm_source}
+                            initialUtmCampaign={e.utm_campaign}
+                            defaultUtmMedium={DEFAULT_UTM_MEDIUM}
+                            defaultUtmCampaign={DEFAULT_UTM_CAMPAIGN}
+                            qrUrl={buildBoothQueueUrl(
+                              baseUrl,
+                              e.slug,
+                              resolveEventUtms(e),
+                            )}
                           />
                         </td>
                       </tr>

@@ -71,7 +71,16 @@ export function RegistrationForm({ eventSlug }: Props) {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, mode, eventSlug }),
+        body: JSON.stringify({
+          ...form,
+          mode,
+          eventSlug,
+          // UTMs from the link they arrived on (e.g. the booth QR
+          // code). The server falls back to the event's defaults.
+          utmMedium: searchParams.get("utm_medium"),
+          utmSource: searchParams.get("utm_source"),
+          utmCampaign: searchParams.get("utm_campaign"),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

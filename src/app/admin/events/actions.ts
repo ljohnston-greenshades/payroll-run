@@ -6,9 +6,11 @@ import {
   createEvent,
   getEvent,
   unarchiveEvent,
-  updateEventSchedule,
+  updateEventSettings,
+  type EventSettings,
 } from "@/lib/db";
 import { isValidAdminKey } from "@/lib/admin";
+import { sanitizeUtm } from "@/lib/utm";
 import { isValidEventSlug } from "@/lib/validation";
 
 interface ActionResult {
@@ -43,9 +45,7 @@ export async function createEventAction(
   }
   const slug = (formData.get("slug") ?? "").toString().trim().toLowerCase();
   const name = (formData.get("name") ?? "").toString().trim();
-  const startsAt = normalizeDate(formData.get("starts_at"));
-  const endsAt = normalizeDate(formData.get("ends_at"));
-  const location = normalizeLocation(formData.get("location"));
+  const settings = readSettings(formData);
 
   if (!isValidEventSlug(slug)) {
     return {
@@ -57,20 +57,37 @@ export async function createEventAction(
   if (name.length < 2 || name.length > 255) {
     return { ok: false, error: "Name must be 2–255 characters." };
   }
-  if (startsAt && endsAt && endsAt < startsAt) {
-    return { ok: false, error: "End date can't be before start date." };
-  }
+  const dateError = checkDates(settings);
+  if (dateError) return { ok: false, error: dateError };
   const existing = await getEvent(slug);
   if (existing) {
     return { ok: false, error: "That slug already exists." };
   }
-  await createEvent(slug, name, startsAt, endsAt, location);
+  await createEvent(slug, name, settings);
   revalidatePath("/admin/events");
   revalidatePath("/");
   return { ok: true };
 }
 
-export async function updateEventScheduleAction(
+function readSettings(formData: FormData): EventSettings {
+  return {
+    startsAt: normalizeDate(formData.get("starts_at")),
+    endsAt: normalizeDate(formData.get("ends_at")),
+    location: normalizeLocation(formData.get("location")),
+    utmMedium: sanitizeUtm(formData.get("utm_medium")),
+    utmSource: sanitizeUtm(formData.get("utm_source")),
+    utmCampaign: sanitizeUtm(formData.get("utm_campaign")),
+  };
+}
+
+function checkDates(s: EventSettings): string | null {
+  if (s.startsAt && s.endsAt && s.endsAt < s.startsAt) {
+    return "End date can't be before start date.";
+  }
+  return null;
+}
+
+export async function updateEventSettingsAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const key = formData.get("key");
@@ -83,13 +100,10 @@ export async function updateEventScheduleAction(
   ) {
     return { ok: false, error: "unauthorized" };
   }
-  const startsAt = normalizeDate(formData.get("starts_at"));
-  const endsAt = normalizeDate(formData.get("ends_at"));
-  const location = normalizeLocation(formData.get("location"));
-  if (startsAt && endsAt && endsAt < startsAt) {
-    return { ok: false, error: "End date can't be before start date." };
-  }
-  await updateEventSchedule(slug, startsAt, endsAt, location);
+  const settings = readSettings(formData);
+  const dateError = checkDates(settings);
+  if (dateError) return { ok: false, error: dateError };
+  await updateEventSettings(slug, settings);
   revalidatePath("/admin/events");
   revalidatePath("/");
   return { ok: true };
