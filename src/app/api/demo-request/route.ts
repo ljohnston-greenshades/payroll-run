@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import {
-  getEvent,
   getPersonalBest,
   markDemoRequested,
 } from "@/lib/db";
-import { sendToClay } from "@/lib/clay";
-import { findContactOwnerByEmail } from "@/lib/hubspot-crm";
+import {
+  findContactOwnerByEmail,
+  setEventDemoHandraiseDate,
+} from "@/lib/hubspot-crm";
 import { getCurrentPlayer } from "@/lib/session";
 import { notifyEventsTeam } from "@/lib/slack-notify";
 
@@ -22,25 +23,14 @@ export async function POST(): Promise<NextResponse> {
   if (!player) {
     return NextResponse.json({ error: "no_session" }, { status: 401 });
   }
-  // Only the first tap counts as a new hand-raise — the routed CTA
-  // can be tapped repeatedly to re-open the rep's calendar.
-  const isFirstRequest = !player.demo_requested;
   await markDemoRequested(player.id);
 
-  if (isFirstRequest) {
-    // Awaited (with a short timeout inside sendToClay) so the request
-    // isn't cut off when the serverless function returns.
-    const event = await getEvent(player.event_slug);
-    await sendToClay({
-      trigger: "demo_request",
-      firstName: player.first_name,
-      lastName: player.last_name,
-      email: player.email,
-      company: player.company,
-      eventSlug: player.event_slug,
-      eventName: event?.name ?? player.event_slug,
-      demoRequested: true,
-    });
+  // Stamp the hand-raise on the HubSpot contact so a HubSpot workflow
+  // can promote it to MQL and alert sales. Only the first tap writes,
+  // so the date reflects when they first asked. Awaited so the write
+  // isn't cut off when the serverless function returns.
+  if (!player.demo_requested) {
+    await setEventDemoHandraiseDate(player.email, new Date());
   }
 
   // Check current routing status. If routed already, the client

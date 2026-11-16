@@ -1,10 +1,12 @@
-// Read-only HubSpot CRM client used by the Play Again screen to
-// detect which rep got assigned to a contact (after Clay routes it)
-// and to fetch that rep's profile so we can show their meeting link.
+// HubSpot CRM client used by the Play Again screen to detect which
+// rep got assigned to a contact (after Clay routes it), fetch that
+// rep's profile so we can show their meeting link, and stamp demo
+// hand-raises on the contact.
 //
-// Uses a Private App access token (`HUBSPOT_ACCESS_TOKEN`) with two
+// Uses a Private App access token (`HUBSPOT_ACCESS_TOKEN`) with these
 // scopes:
 //   - crm.objects.contacts.read
+//   - crm.objects.contacts.write   (for setEventDemoHandraiseDate)
 //   - crm.objects.owners.read
 
 const HS_API = "https://api.hubapi.com";
@@ -110,5 +112,47 @@ export async function getOwnerProfile(
   } catch (err) {
     console.warn("HubSpot owner fetch failed:", err);
     return null;
+  }
+}
+
+// Sets the contact's `event_demo_handraise_date` property when a
+// player asks for a demo. A HubSpot workflow keys off this property
+// to set lifecycle stage = MQL and notify #inbound-leads.
+// Looks the contact up by email (idProperty=email). Returns false on
+// any failure (missing token or write scope, contact not created yet,
+// network error); the hand-raise is still saved in Postgres and shown
+// in the admin panel.
+export async function setEventDemoHandraiseDate(
+  email: string,
+  when: Date,
+): Promise<boolean> {
+  const headers = authHeaders();
+  if (!headers) return false;
+  try {
+    const res = await fetch(
+      `${HS_API}/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`,
+      {
+        method: "PATCH",
+        headers,
+        cache: "no-store",
+        body: JSON.stringify({
+          properties: { event_demo_handraise_date: when.toISOString() },
+        }),
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+    if (!res.ok) {
+      console.error(
+        `HubSpot hand-raise update ${res.status} for ${email}: ${(await res
+          .text()
+          .catch(() => ""))
+          .slice(0, 200)}`,
+      );
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("HubSpot hand-raise update failed:", err);
+    return false;
   }
 }

@@ -109,18 +109,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // slow. Errors are swallowed; downstream "Schedule with X"
   // flow tolerates an unrouted lead by falling back to the generic
   // demo CTA + Slack QB.
-  // A brand-new player can't have asked for a demo yet, so this is
-  // always false here; /api/demo-request sends a follow-up row with
-  // demoRequested: true when they tap the CTA.
+  // Demo hand-raises don't go to Clay; /api/demo-request stamps them
+  // on the HubSpot contact instead.
   void sendToClay({
-    trigger: "registration",
     firstName,
     lastName,
     email,
     company,
     eventSlug: event.slug,
     eventName: event.name,
-    demoRequested: false,
   });
 
   if (queueing) {
